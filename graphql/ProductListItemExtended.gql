@@ -1,0 +1,4 @@
+fragment ProductListItem_SimpleProduct_Extended on SimpleProduct {
+  ...ProductListItem_SimpleProduct_Fragment
+  location   # your custom attribute
+}
