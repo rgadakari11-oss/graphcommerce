@@ -1,0 +1,35 @@
+query SellerProducts($seller: String!) {
+  products(
+    filter: {
+      seller_id: { match: $seller }
+    }
+    pageSize: 12
+    currentPage: 1
+  ) {
+    items {
+      uid
+      sku
+      name
+      location
+      seller
+      url_key
+      categories {
+        uid
+        name
+        url_key
+      }
+      small_image {
+        url
+        label
+      }
+      price_range {
+        minimum_price {
+          regular_price {
+            value
+            currency
+          }
+        }
+      }
+    }
+  }
+}

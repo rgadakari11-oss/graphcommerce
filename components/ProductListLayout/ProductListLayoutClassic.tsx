@@ -43,7 +43,7 @@ export const ProductListLayoutClassic = memoDeep((props: ProductListLayoutProps)
             })}
             gutterBottom={!category?.description && category?.children?.length === 0}
           >
-            {title}
+            "dddd1ddd"
           </LayoutTitle>
           <CategoryDescription
             sx={(theme) => ({ textAlign: 'center', mb: theme.spacings.sm })}
@@ -58,7 +58,7 @@ export const ProductListLayoutClassic = memoDeep((props: ProductListLayoutProps)
         </>
       ) : (
         <LayoutTitle gutterTop variant='h1' sx={{ alignItems: { xs: 'center', md: 'center' } }}>
-          Search {params.search}
+          Searcsssh {params.search}
         </LayoutTitle>
       )}
 
@@ -72,11 +72,7 @@ export const ProductListLayoutClassic = memoDeep((props: ProductListLayoutProps)
       </StickyBelowHeader>
       <Container maxWidth={false}>
         <ProductListCount total_count={total_count} />
-        <ProductListItems
-          {...products}
-          loadingEager={6}
-          title={(params.search ? `Search ${params.search}` : title) ?? ''}
-        />
+      
         <ProductListPagination page_info={page_info} params={params} />
       </Container>
     </>

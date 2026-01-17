@@ -1,0 +1,12 @@
+query SellerById($customer_id: Int!) {
+  vendorStores(customer_id: $customer_id) {
+    customer_id
+    store_name
+    store_code
+    years_in_business
+    area
+    city
+    phone
+    trust_seal
+  }
+}

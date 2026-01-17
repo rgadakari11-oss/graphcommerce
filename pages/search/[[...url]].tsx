@@ -20,8 +20,8 @@ import {
   productListApplySearchDefaults,
   searchDefaultsToProductListFilters,
   SearchField,
-  useProductList,
 } from '@graphcommerce/magento-search'
+import { customuseProductList } from '../../hooks/customuseProductList'
 import { PageMeta, StoreConfigDocument } from '@graphcommerce/magento-store'
 import type { GetStaticProps } from '@graphcommerce/next-ui'
 import { LayoutHeader } from '@graphcommerce/next-ui'
@@ -48,7 +48,7 @@ export type GetPageStaticProps = GetStaticProps<
 >
 
 function SearchResultPage(props: SearchResultProps) {
-  const productList = useProductList(props)
+  const productList = customuseProductList(props)
   const { params, menu } = productList
   const search = params.url.split('/')[1]
 
@@ -131,6 +131,10 @@ export const getServerSideProps: GetPageStaticProps = async (context) => {
   const categories = false
     ? staticClient.query({ query: CategorySearchDocument, variables: { search } })
     : undefined
+
+    console.log('=== FILTER TYPES START ===')
+console.log(await filterTypes)
+console.log('=== FILTER TYPES END ===')
 
   const result = {
     props: {

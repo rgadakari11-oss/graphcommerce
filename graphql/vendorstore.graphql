@@ -1,0 +1,35 @@
+query VendorStores(
+  $customer_id: Int
+  $status: Int
+) {
+  vendorStores(
+    customer_id: $customer_id
+    status: $status
+  ) {
+    store_id
+    customer_id
+    store_code
+    store_name
+    address
+    area
+    city
+    state
+    country
+    pincode
+    latitude
+    longitude
+    status
+    gst_number
+    years_in_business
+    trust_seal
+    phone
+    email
+    logo
+    certifications
+    completed_projects
+    awards
+    about_us
+    created_at
+    updated_at
+  }
+}

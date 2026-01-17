@@ -1,5 +1,6 @@
 import type { PageOptions } from '@graphcommerce/framer-next-pages'
-import { AccountSignInUpForm, getCustomerAccountIsDisabled } from '@graphcommerce/magento-customer'
+import { getCustomerAccountIsDisabled } from '@graphcommerce/magento-customer'
+import { CustomAccountSignInUpForm } from '../../components/account/CustomAccountSignInUpForm'
 import { PageMeta, StoreConfigDocument } from '@graphcommerce/magento-store'
 import { useMergeGuestWishlistWithCustomer } from '@graphcommerce/magento-wishlist'
 import type { GetStaticProps } from '@graphcommerce/next-ui'
@@ -25,7 +26,7 @@ function AccountSignInPage() {
         </LayoutTitle>
       </LayoutOverlayHeader>
       <Container maxWidth='md'>
-        <AccountSignInUpForm />
+        <CustomAccountSignInUpForm />
       </Container>
     </>
   )

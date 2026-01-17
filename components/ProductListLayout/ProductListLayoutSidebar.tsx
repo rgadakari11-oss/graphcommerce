@@ -25,12 +25,37 @@ import {
   ProductFiltersProCategorySectionSearch,
   ProductFiltersProSearchTerm,
 } from '@graphcommerce/magento-search'
-import { Container, MediaQuery, memoDeep, StickyBelowHeader } from '@graphcommerce/next-ui'
+import {
+  Container,
+  MediaQuery,
+  memoDeep,
+  StickyBelowHeader,
+} from '@graphcommerce/next-ui'
 import { Trans } from '@lingui/macro'
 import { Box, Typography } from '@mui/material'
 import { ProductListItems } from '../ProductListItems'
 import type { ProductListLayoutProps } from './types'
 import { useLayoutConfiguration } from './types'
+import dynamic from 'next/dynamic'
+
+
+/* -------------------------------------------------------------------------- */
+/* NEAR ME (CLIENT ONLY)                                                       */
+/* -------------------------------------------------------------------------- */
+
+const Nearme = dynamic(
+  () => import('../seller/Nearme').then(m => m.Nearme),
+  { ssr: false }
+)
+
+const AppliedFilterChips = dynamic(
+  () => import('../seller/AppliedFilterChips').then(m => m.AppliedFilterChips),
+  { ssr: false }
+)
+
+/* -------------------------------------------------------------------------- */
+/* LAYOUT                                                                     */
+/* -------------------------------------------------------------------------- */
 
 export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps) => {
   const { filters, filterTypes, params, products, handleSubmit, category, title, menu } = props
@@ -49,6 +74,9 @@ export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps)
       autoSubmitMd
       handleSubmit={handleSubmit}
     >
+      {/* ------------------------------------------------------------------ */}
+      {/* BREADCRUMBS                                                        */}
+      {/* ------------------------------------------------------------------ */}
       {import.meta.graphCommerce.breadcrumbs && category && (
         <Container maxWidth={false}>
           <CategoryBreadcrumbs
@@ -63,6 +91,9 @@ export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps)
         </Container>
       )}
 
+      {/* ------------------------------------------------------------------ */}
+      {/* MAIN GRID                                                          */}
+      {/* ------------------------------------------------------------------ */}
       <Container
         maxWidth={false}
         sx={(theme) => ({
@@ -83,6 +114,9 @@ export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps)
           },
         })}
       >
+        {/* ---------------------------------------------------------------- */}
+        {/* TITLE + NEAR ME                                                   */}
+        {/* ---------------------------------------------------------------- */}
         <Box
           className='title'
           sx={(theme) => ({
@@ -94,15 +128,37 @@ export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps)
         >
           {category ? (
             <>
-              <Typography variant='h1'>{title}</Typography>
+              <Typography
+                variant='h1'
+                sx={(theme) => ({
+                  fontSize: {
+                    xs: '1.4rem',
+                    sm: '1.6rem',
+                    md: '2.4rem',
+                  },
+                  lineHeight: 1.2,
+                  fontWeight: 700,
+                })}
+              >
+                {title}
+              </Typography>
+
+
+              {/* ✅ NEAR ME AFTER CATEGORY TITLE */}
+              <Nearme />
+              <AppliedFilterChips
+              />
 
               <CategoryDescription
                 textAlignMd='start'
                 textAlignSm='start'
                 description={category?.description}
               />
+
               <MediaQuery query={(theme) => theme.breakpoints.down('md')}>
-                <CategoryChildren params={params}>{category?.children}</CategoryChildren>
+                <CategoryChildren params={params}>
+                  {category?.children}
+                </CategoryChildren>
               </MediaQuery>
             </>
           ) : (
@@ -112,15 +168,26 @@ export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps)
                   <Trans>All products</Trans>
                 </ProductFiltersProSearchTerm>
               </Typography>
+
+              {/* ✅ NEAR ME AFTER SEARCH RESULT TITLE */}
+              <Nearme />
+
               <ProductListSuggestions products={products} />
             </>
           )}
         </Box>
 
+        {/* ---------------------------------------------------------------- */}
+        {/* COUNT                                                            */}
+        {/* ---------------------------------------------------------------- */}
         <ProductListCount
           total_count={total_count}
           sx={{ gridArea: 'count', width: '100%', my: 0, height: '1em' }}
         />
+
+        {/* ---------------------------------------------------------------- */}
+        {/* PRODUCTS                                                         */}
+        {/* ---------------------------------------------------------------- */}
         <Box sx={{ gridArea: 'items' }}>
           {products.items.length <= 0 ? (
             <ProductFiltersProNoResults search={params.search} />
@@ -134,12 +201,18 @@ export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps)
           )}
         </Box>
 
+        {/* ---------------------------------------------------------------- */}
+        {/* PAGINATION                                                       */}
+        {/* ---------------------------------------------------------------- */}
         <ProductListPagination
           page_info={page_info}
           params={params}
           sx={{ gridArea: 'pagination', my: 0 }}
         />
 
+        {/* ---------------------------------------------------------------- */}
+        {/* MOBILE FILTER BAR                                                */}
+        {/* ---------------------------------------------------------------- */}
         <MediaQuery query={(theme) => theme.breakpoints.down('md')}>
           <StickyBelowHeader sx={{ gridArea: 'horizontalFilters' }}>
             <ProductListFiltersContainer
@@ -151,6 +224,7 @@ export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps)
               })}
             >
               <ProductFiltersProAggregations renderer={productFiltersProChipRenderer} />
+
               {products.items.length > 0 && (
                 <>
                   <ProductFiltersProSortChip
@@ -171,6 +245,9 @@ export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps)
           </StickyBelowHeader>
         </MediaQuery>
 
+        {/* ---------------------------------------------------------------- */}
+        {/* SIDEBAR                                                          */}
+        {/* ---------------------------------------------------------------- */}
         <MediaQuery
           query={(theme) => theme.breakpoints.up('md')}
           display='block'
@@ -180,25 +257,27 @@ export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps)
           })}
         >
           <ProductFiltersProClearAll sx={{ alignSelf: 'center' }} />
-          <>
-            {category ? (
-              <ProductFiltersProCategorySection
-                category={category}
-                params={params}
-                hideBreadcrumbs
-              />
-            ) : (
-              <ProductFiltersProCategorySectionSearch menu={menu} defaultExpanded />
-            )}
-          </>
+
+          {category ? (
+            <ProductFiltersProCategorySection
+              category={category}
+              params={params}
+              hideBreadcrumbs
+            />
+          ) : (
+            <ProductFiltersProCategorySectionSearch
+              menu={menu}
+              defaultExpanded
+            />
+          )}
 
           <ProductFiltersProSortSection
             sort_fields={sort_fields}
             total_count={total_count}
             category={category}
           />
-          <ProductFiltersProLimitSection />
 
+          <ProductFiltersProLimitSection />
           <ProductFiltersProAggregations renderer={productFiltersProSectionRenderer} />
         </MediaQuery>
       </Container>

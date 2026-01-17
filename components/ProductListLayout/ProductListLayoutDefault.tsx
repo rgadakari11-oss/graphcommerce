@@ -70,8 +70,9 @@ export const ProductListLayoutDefault = memoDeep((props: ProductListLayoutProps)
               sx={{ alignItems: { xs: 'left', md: 'center' } }}
               gutterBottom={false}
             >
-              {title}
+              "neadd"
             </LayoutTitle>
+            
             <CategoryDescription
               textAlignMd='center'
               textAlignSm='center'

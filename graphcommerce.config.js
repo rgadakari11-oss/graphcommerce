@@ -50,7 +50,7 @@ const config = {
   // containerSizingContent: 'FULL_WIDTH',
   // containerSizingShell: 'FULL_WIDTH',
   // demoMode: true,
-  // breadcrumbs: false,
+   breadcrumbs: true,
 }
 
 module.exports = config

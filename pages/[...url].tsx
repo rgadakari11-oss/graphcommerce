@@ -24,8 +24,8 @@ import {
   productListApplyCategoryDefaults,
   ProductListDocument,
   productListLink,
-  useProductList,
 } from '@graphcommerce/magento-product'
+import { customuseProductList } from '../hooks/customuseProductList'
 import { redirectOrNotFound, redirectTo, StoreConfigDocument } from '@graphcommerce/magento-store'
 import type { GetStaticProps } from '@graphcommerce/next-ui'
 import { Container, LayoutHeader, LayoutTitle } from '@graphcommerce/next-ui'
@@ -53,7 +53,7 @@ type GetPageStaticProps = GetStaticProps<LayoutNavigationProps, CategoryProps, C
 
 function CategoryPage(props: CategoryProps) {
   const { categories, ...rest } = props
-  const productList = useProductList({
+  const productList = customuseProductList({
     ...rest,
     category: categories?.items?.[0],
   })
@@ -75,14 +75,18 @@ function CategoryPage(props: CategoryProps) {
           {import.meta.graphCommerce.breadcrumbs && (
             <Container maxWidth={false}>
               <CategoryBreadcrumbs
-                category={category}
-                sx={(theme) => ({
-                  height: 0,
-                  [theme.breakpoints.down('md')]: {
-                    '& .MuiBreadcrumbs-ol': { justifyContent: 'center' },
-                  },
-                })}
-              />
+                  category={{
+                    ...category,
+                    breadcrumbs: [
+                      {
+                        category_uid: category?.uid,
+                        category_name: category?.name,
+                        category_url_path: category?.url_path,
+                      },
+                    ],
+                  }}
+                />
+
             </Container>
           )}
           <CategoryHeroNav
