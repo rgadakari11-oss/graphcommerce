@@ -2,7 +2,7 @@
 import React, { useRef } from 'react'
 import { Box, Container, Typography, Grid } from '@mui/material'
 import { useQuery } from '@apollo/client'
-import { PageMeta } from '@graphcommerce/next-ui'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 
 import { VendorStoresDocument } from '../../graphql/vendorstore.gql'
@@ -65,25 +65,28 @@ export default function SellerPage() {
   return (
     <>
       {/* SEO */}
-      <PageMeta
-        title={store.store_name}
-        metaDescription={store.about_us || store.store_name}
-      />
+      <Head>
+        <title>{store.store_name}</title>
+        <meta
+          name="description"
+        />
+      </Head>
+
 
       <Box sx={{ minHeight: '100vh', backgroundColor: '#f7f7f7' }}>
         {/* ================= HEADER ================= */}
         <SellerHeader
           data={{
-            storeName: store.store_name,
-            gstNumber: store.gst_number,
-            yearsInBusiness: store.years_in_business,
-            trustSeal: store.trust_seal,
-            phone: store.phone,
-            email: store.email,
-            logoUrl: store.logo,
-            rating: '4',
-            ratingCount: '1',
-            responseRate: '71',
+            storeName: store.store_name || '',
+            gstNumber: store.gst_number || '',
+            yearsInBusiness: store.years_in_business || 0,
+            trustSeal: store.trust_seal || false,
+            phone: store.phone || '',
+            email: store.email || '',
+            logoUrl: store.logo || '',
+            rating: 4,
+            ratingCount: 1,
+            responseRate: 71,
           }}
         />
 
@@ -97,10 +100,10 @@ export default function SellerPage() {
                 onProducts={() => scrollTo(productsRef)}
                 onGallery={() => scrollTo(galleryRef)}
                 onReachUs={() => scrollTo(reachUsRef)}
-                gstNumber={store.gst_number}
+                gstNumber={store.gst_number || ''}
                 location={`${store.city}, ${store.state}`}
-                phone={store.phone}
-                email={store.email}
+                phone={store.phone || ''}
+                email={store.email || ''}
               />
             </Grid>
 
@@ -109,11 +112,11 @@ export default function SellerPage() {
               {/* ABOUT / STATS */}
               <div ref={aboutRef}>
                 <SellerStats
-                  yearsInBusiness={store.years_in_business}
+                  yearsInBusiness={store.years_in_business || 0}
                   clientRating="4.5"
-                  completedProjects={store.completed_projects}
-                  certifications={store.certifications}
-                  awards={store.awards}
+                  completedProjects={store.completed_projects || ''}
+                  certifications={store.certifications || ''}
+                  awards={store.awards || ''}
                 />
                 <SellerAbout aboutUs={store.about_us} />
               </div>
@@ -135,18 +138,18 @@ export default function SellerPage() {
               </div>
 
               {/* REVIEWS */}
-              <SellerReviews averageRating={4.4} totalReviews={93} />
+              <SellerReviews averageRating={4} totalReviews={93} />
 
               {/* REACH US */}
               <div ref={reachUsRef}>
                 <Box sx={{ mt: 6 }}>
                   <SellerReachUs
-                    address={store.address}
-                    city={store.city}
-                    state={store.state}
-                    country={store.country}
-                    pincode={store.pincode}
-                    gstNumber={store.gst_number}
+                    address={store.address || ''}
+                    city={store.city || ''}
+                    state={store.state || ''}
+                    country={store.country || ''}
+                    pincode={store.pincode || ''}
+                    gstNumber={store.gst_number || ''}
                   />
                 </Box>
               </div>

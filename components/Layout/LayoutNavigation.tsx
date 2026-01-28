@@ -34,6 +34,9 @@ import { useEffect, useState, useRef } from 'react'
 import { Footer } from './Footer'
 import type { LayoutQuery } from './Layout.gql'
 import { Logo } from './Logo'
+import HeaderAccountAction from '../header/HeaderAccountAction'
+
+
 
 // Location storage utilities
 interface LocationData {
@@ -439,10 +442,12 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
                 </Fab>
 
                 <WishlistFab icon={<IconSvg src={iconHeart} size="large" />} />
-                <CustomerFab
+                <HeaderAccountAction />
+
+                {/* <CustomerFab
                   guestHref="/account/signin"
                   authHref="/account"
-                />
+                /> */}
                 {cartEnabled && <CartFab />}
               </DesktopNavActions>
 

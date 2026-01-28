@@ -1,10 +1,12 @@
 query VendorStores(
   $customer_id: Int
   $status: Int
+  $mobile: String
 ) {
   vendorStores(
     customer_id: $customer_id
     status: $status
+    mobile: $mobile
   ) {
     store_id
     customer_id
@@ -31,5 +33,9 @@ query VendorStores(
     about_us
     created_at
     updated_at
+    firstname
+    lastname
+    whatsapp_number
+    businesscategories
   }
 }

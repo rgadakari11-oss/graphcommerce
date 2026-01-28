@@ -1,0 +1,15 @@
+mutation VerifyOtp($input: VerifyMobileOtpInput!) {
+  verifyMobileOtp(input: $input) {
+    success
+    message
+    token
+    customer {
+      id
+      firstname
+      lastname
+      email
+      mobile_number
+      is_seller
+    }
+  }
+}

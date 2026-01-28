@@ -91,10 +91,16 @@ function ProductListItemReal(props: ProductProps) {
   } = props
 
   const router = useRouter()
-  const { seller } = useProductSeller(seller_id)
+  const sellerId = seller_id ? Number(seller_id) : undefined
+  const { seller } = useProductSeller(sellerId)
 
   const productUrl = `/p/${props.url_key}`
   const sellerUrl = seller?.store_code ? `/seller/${seller.store_code}` : '#'
+  const titleAndPriceClasses = {
+    titleContainer: classes.titleContainer,
+    title: classes.titleContainer,   // or a separate class if you have one
+    subtitle: classes.discount,      // or another suitable class
+  }
 
   return (
     <Box
@@ -114,7 +120,6 @@ function ProductListItemReal(props: ProductProps) {
       <Box sx={{ flex: '0 0 180px', cursor: 'pointer' }} onClick={() => router.push(productUrl)}>
         <ProductImageContainer className={classes.imageContainer}>
           <ProductListItemImage
-            classes={classes}
             src={small_image?.url || '/images/placeholder-product.png'}
             alt={small_image?.label || name}
             aspectRatio={aspectRatio}
@@ -126,7 +131,12 @@ function ProductListItemReal(props: ProductProps) {
 
           {!imageOnly && (
             <ProductListItemImageAreas
-              classes={classes}
+              classes={{
+                topLeft: classes.discount,  // e.g., your discount label
+                topRight: undefined,
+                bottomLeft: undefined,
+                bottomRight: undefined,
+              }}
               topLeft={
                 <>
                   <ProductDiscountLabel className={classes.discount} price_range={price_range} />
@@ -147,7 +157,7 @@ function ProductListItemReal(props: ProductProps) {
         <Box sx={{ flex: 1, minWidth: 0 }}>
           {/* TITLE + PRICE */}
           <CustomProductListItemTitleAndPrice
-            classes={classes}
+            classes={titleAndPriceClasses}
             titleComponent={titleComponent}
             title={
               <Tooltip title={name} placement="top-start" arrow disableInteractive>
@@ -181,8 +191,10 @@ function ProductListItemReal(props: ProductProps) {
                   whiteSpace: 'nowrap',
                 }}
               >
-                ₹{' '}
-                {price_range.minimum_price.regular_price.value.toLocaleString('en-IN')}
+                ₹ {price_range?.minimum_price?.regular_price?.value != null
+                  ? price_range.minimum_price.regular_price.value.toLocaleString('en-IN')
+                  : '-'}
+
               </Typography>
             )}
           </CustomProductListItemTitleAndPrice>

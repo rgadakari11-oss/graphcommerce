@@ -1,0 +1,7 @@
+mutation CreateVendorStore($input: CreateVendorStoreInput!) {
+  createVendorStore(input: $input) {
+    success
+    message
+    store_id
+  }
+}

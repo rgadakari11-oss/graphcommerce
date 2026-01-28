@@ -300,7 +300,7 @@ function ProductPage(props: Props) {
 
         <Box sx={(theme) => ({ width: '100%', display: 'flex', justifyContent: 'left', mt: theme.spacings.xl })}>
           <Box sx={{ width: { xs: '100%', md: '75%' } }}>
-            <SellerReviews />
+            <SellerReviews averageRating={4} totalReviews={93} />
           </Box>
         </Box>
 

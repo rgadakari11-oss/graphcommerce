@@ -111,7 +111,7 @@ export function SupplierInfoCard({ sellerId }: Props) {
           display: 'inline-block',
         }}
       >
-        {seller.store_name}
+        {seller?.store_name || ''}
       </Typography>
 
       {/* ------------------------ TRUST BADGES -------------------------- */}

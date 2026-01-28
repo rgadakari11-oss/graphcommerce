@@ -5,5 +5,11 @@ export interface SellerHeaderData {
   yearsInBusiness?: number
   trustSeal?: boolean
   phone?: string
+  email?: string
   logoUrl?: string
+  rating?: number
+  ratingCount?: number
+  responseRate?: number
+  
+
 }

@@ -23,7 +23,7 @@ import { useCustomerQuery } from '@graphcommerce/magento-customer/hooks/useCusto
 import { ApolloCustomerErrorAlert } from '@graphcommerce/magento-customer/components/ApolloCustomerError'
 import { CustomSignInForm } from './CustomSignInForm'
 import { signOut } from '@graphcommerce/magento-customer/components/SignOutForm/signOut'
-import { SignUpForm } from '@graphcommerce/magento-customer/components/SignUpForm/SignUpForm'
+import { CustomSignUpForm } from './CustomSignUpForm'
 
 export type CustomAccountSignInUpFormProps = {
   sx?: SxProps<Theme>
@@ -216,7 +216,7 @@ export function CustomAccountSignInUpForm(props: CustomAccountSignInUpFormProps)
 
       {mode === 'signup' && canSignUp && (
         <Box>
-          <SignUpForm email={emailValue} setError={setError} clearErrors={clearErrors} />
+          <CustomSignUpForm email={emailValue} setError={setError} clearErrors={clearErrors} />
         </Box>
       )}
       {mode === 'signup' && !canSignUp && (

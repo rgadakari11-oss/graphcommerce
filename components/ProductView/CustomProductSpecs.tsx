@@ -60,25 +60,25 @@ export function CustomProductSpecs(props: CustomProductSpecsProps) {
             display: 'flex',
             flexWrap: 'wrap',
             gap: '6px',
-            marginTop: '2px',     // ⬇ reduced
-            marginBottom: '6px',  // ⬇ reduced
+            marginTop: '2px',
+            marginBottom: '6px',
           })}
         >
           {summarySpecs.map((spec) => (
             <Box
-              key={spec.attribute_code}
-              sx={{
+              key={spec?.attribute_code}
+              sx={(theme) => ({
                 backgroundColor: theme.palette.grey[50],
                 padding: '4px 8px',
                 borderRadius: '4px',
                 fontSize: '0.8rem',
-              }}
+              })}
             >
-              <strong>{spec.label}:</strong>{' '}
-              {spec.options?.[0]?.label}
+              <strong>{spec?.label}:</strong> {spec?.options?.[0]?.label ?? '-'}
             </Box>
           ))}
         </Box>
+
 
         {/* 🔹 FULL TECHNICAL TABLE */}
         <Box

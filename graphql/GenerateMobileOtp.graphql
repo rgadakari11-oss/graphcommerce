@@ -1,0 +1,7 @@
+mutation GenerateMobileOtp($input: GenerateMobileOtpInput!) {
+  generateMobileOtp(input: $input) {
+    success
+    message
+    otp_sent
+  }
+}

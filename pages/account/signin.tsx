@@ -4,15 +4,10 @@ import { CustomAccountSignInUpForm } from '../../components/account/CustomAccoun
 import { PageMeta, StoreConfigDocument } from '@graphcommerce/magento-store'
 import { useMergeGuestWishlistWithCustomer } from '@graphcommerce/magento-wishlist'
 import type { GetStaticProps } from '@graphcommerce/next-ui'
-import { LayoutOverlayHeader, LayoutTitle } from '@graphcommerce/next-ui'
 import { i18n } from '@lingui/core'
-import { Trans } from '@lingui/react'
-import { Container } from '@mui/material'
-import type { LayoutOverlayProps } from '../../components'
-import { LayoutOverlay } from '../../components'
+import { CompactAuthLayout } from '../../components/Layout/Compactauthlayout'
 import { graphqlSharedClient } from '../../lib/graphql/graphqlSsrClient'
-
-type GetPageStaticProps = GetStaticProps<LayoutOverlayProps>
+import { Box } from '@mui/material'
 
 function AccountSignInPage() {
   useMergeGuestWishlistWithCustomer()
@@ -20,29 +15,59 @@ function AccountSignInPage() {
   return (
     <>
       <PageMeta title={i18n._(/* i18n */ 'Sign in')} metaRobots={['noindex']} />
-      <LayoutOverlayHeader>
-        <LayoutTitle size='small' component='span'>
-          <Trans id='Sign in' />
-        </LayoutTitle>
-      </LayoutOverlayHeader>
-      <Container maxWidth='md'>
-        <CustomAccountSignInUpForm />
-      </Container>
+
+      {/* Transparent full-viewport wrapper */}
+      <Box
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'transparent',
+          zIndex: 1200,
+        }}
+      >
+        <CompactAuthLayout>
+          <CustomAccountSignInUpForm />
+        </CompactAuthLayout>
+      </Box>
     </>
   )
 }
 
-const pageOptions: PageOptions<LayoutOverlayProps> = {
-  overlayGroup: 'account-public',
-  sharedKey: () => 'account-public',
-  Layout: LayoutOverlay,
+/**
+ * IMPORTANT:
+ * Remove GraphCommerce overlay/layout background
+ * without using unsupported props.
+ */
+const pageOptions: PageOptions = {
+  Layout: undefined,
+
+  layoutProps: {
+    sx: {
+      backgroundColor: 'transparent',
+      '& .Layout-root': {
+        backgroundColor: 'transparent',
+      },
+      '& .Layout-content': {
+        backgroundColor: 'transparent',
+      },
+      '& body': {
+        backgroundColor: 'transparent',
+      },
+    },
+  },
 }
+
 AccountSignInPage.pageOptions = pageOptions
 
 export default AccountSignInPage
 
-export const getStaticProps: GetPageStaticProps = async (context) => {
-  if (getCustomerAccountIsDisabled(context.locale)) return { notFound: true }
+/**
+ * 👇 No layout props → {}
+ */
+export const getStaticProps: GetStaticProps<{}> = async (context) => {
+  if (getCustomerAccountIsDisabled(context.locale)) {
+    return { notFound: true }
+  }
 
   const client = graphqlSharedClient(context)
   const conf = client.query({ query: StoreConfigDocument })
@@ -50,7 +75,6 @@ export const getStaticProps: GetPageStaticProps = async (context) => {
   return {
     props: {
       apolloState: await conf.then(() => client.cache.extract()),
-      variantMd: 'bottom',
     },
   }
 }
