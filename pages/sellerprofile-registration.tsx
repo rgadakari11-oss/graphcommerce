@@ -48,6 +48,8 @@ import type { LayoutNavigationProps } from '../components'
 import { LayoutDocument, LayoutNavigation } from '../components'
 import { graphqlSharedClient, graphqlSsrClient } from '../lib/graphql/graphqlSsrClient'
 import { SignUpDocument } from '@graphcommerce/magento-customer/components/SignUpForm/SignUp.gql'
+import { UpdateCustomerSellerDetailsDocument } from '../graphql/account/UpdateCustomerSellerDetails.gql'
+
 
 // GraphQL Mutation for saving business registration
 const CREATE_VENDOR_STORE = gql`
@@ -201,7 +203,7 @@ const indianStates = [
   'West Bengal',
 ]
 
-function BusinessSignupPage() {
+function SellerProfileRegistrationPage() {
   const router = useRouter()
   const [formData, setFormData] = useState<BusinessFormData>(initialFormData)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -228,6 +230,9 @@ function BusinessSignupPage() {
   }`
   const [signIn] = useMutation(SIGN_IN)
   const [signUp] = useMutation(SignUpDocument)
+  const [updateCustomerSellerDetails] = useMutation(
+    UpdateCustomerSellerDetailsDocument
+  )
 
 
   // GraphQL Query for fetching existing data
@@ -330,7 +335,7 @@ function BusinessSignupPage() {
 
         if (!sellerSessionData) {
           // No session found, redirect to signup
-          router.push('/account/signupcustomer')
+          router.push('/account/sellersignup')
           return
         }
 
@@ -340,7 +345,7 @@ function BusinessSignupPage() {
         // Validate session data
         if (!sessionData.mobile || !sessionData.verifiedAt) {
           // Invalid session data, redirect to signup
-          router.push('/account/signupcustomer')
+          router.push('/account/sellersignup')
           return
         }
 
@@ -485,6 +490,14 @@ function BusinessSignupPage() {
         },
       })
 
+      await updateCustomerSellerDetails({
+        variables: {
+          email: emailFromMobile,
+          mobile_number: formData.mobile,
+          is_seller: true,
+        },
+      })
+
 
       const signInResult = await signIn({
         variables: {
@@ -517,7 +530,7 @@ function BusinessSignupPage() {
 
         // Redirect to dashboard or success page
         setTimeout(() => {
-          router.push('/vendor/dashboard')
+          router.push('/seller/dashboard')
         }, 2000)
       }
     } catch (error) {
@@ -576,7 +589,6 @@ function BusinessSignupPage() {
       <PageMeta
         title='Business Signup - Register Your Business'
         metaDescription='Join our platform and grow your business. Register now to access exclusive features and reach more customers.'
-        metaRobots={['index', 'follow']}
       />
 
       {/* Loading Screen */}
@@ -1452,11 +1464,11 @@ function BusinessSignupPage() {
   )
 }
 
-BusinessSignupPage.pageOptions = {
+SellerProfileRegistrationPage.pageOptions = {
   Layout: LayoutNavigation,
 } as PageOptions
 
-export default BusinessSignupPage
+export default SellerProfileRegistrationPage
 
 export const getStaticProps: GetPageStaticProps = async (context) => {
   const client = graphqlSharedClient(context)

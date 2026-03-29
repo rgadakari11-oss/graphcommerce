@@ -98,17 +98,39 @@ export function Nearme() {
   }
 
   return (
-    <div style={{ margin: '8px 0 12px' }}>
+    <div
+      style={{
+        width: '100%',
+        maxWidth: '100%',
+        overflow: 'hidden',      // ⭐ prevents layout expansion
+      }}
+    >
       <div
         style={{
           display: 'flex',
           gap: 8,
+
           overflowX: 'auto',
-          paddingBottom: 4,
+          overflowY: 'hidden',
+
+          width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,            // ⭐ allows shrink inside grid/flex
+
+          WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
         }}
       >
-        {/* Near Me */}
+        <style>
+          {`
+          /* hide scrollbar safely */
+          div::-webkit-scrollbar {
+            display: none;
+          }
+        `}
+        </style>
+
         <Chip
           active={activeLocation?.slug === 'nea'}
           primary
@@ -117,7 +139,6 @@ export function Nearme() {
           {loading ? 'Detecting…' : 'Near Me'}
         </Chip>
 
-        {/* Cities */}
         {TOP_CITIES.map((city) => {
           const isActive = activeLocation?.slug === city.slug
 
@@ -135,10 +156,11 @@ export function Nearme() {
       </div>
     </div>
   )
+
 }
 
 /* ---------------------------------- */
-/* CHIP (PREVIOUS STYLE + CLOSE ICON) */
+/* CHIP (ENHANCED STYLE + CLOSE ICON) */
 /* ---------------------------------- */
 
 function Chip({
@@ -161,24 +183,37 @@ function Chip({
         display: 'inline-flex',
         alignItems: 'center',
         gap: 6,
-        padding: '6px 14px',
+        padding: '7px 16px',
         borderRadius: 999,
         fontSize: 13,
-        fontWeight: 500,
+        fontWeight: 600,
         cursor: 'pointer',
-        border: active ? '1px solid #1976d2' : '1px solid #ddd',
+        border: active ? '1.5px solid #1976d2' : '1.5px solid #e0e0e0',
         background: active
           ? '#1976d2'
           : primary
-          ? '#f5f7fa'
-          : '#fff',
+            ? 'linear-gradient(135deg, #f5f7fa, #e8ecf1)'
+            : '#fff',
         color: active ? '#fff' : '#333',
         boxShadow: active
           ? '0 2px 8px rgba(25,118,210,0.35)'
-          : 'none',
+          : '0 1px 3px rgba(0,0,0,0.08)',
         userSelect: 'none',
         transition: 'all 0.2s ease',
         whiteSpace: 'nowrap',
+        flexShrink: 0, // Prevent chips from shrinking
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.boxShadow = '0 3px 8px rgba(0,0,0,0.12)'
+          e.currentTarget.style.borderColor = '#1976d2'
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'
+          e.currentTarget.style.borderColor = '#e0e0e0'
+        }
       }}
     >
       <span>{children}</span>
@@ -191,11 +226,21 @@ function Chip({
             onRemove()
           }}
           style={{
-            fontSize: 14,
+            fontSize: 18,
             lineHeight: 1,
-            marginLeft: 4,
+            marginLeft: 2,
             cursor: 'pointer',
             opacity: 0.9,
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '1'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '0.9'
           }}
         >
           ×

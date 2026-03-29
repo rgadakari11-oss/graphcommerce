@@ -349,7 +349,6 @@ function SellerProfilePage() {
     <>
       <PageMeta
         title={`${sellerData.companyName} - ${sellerData.tagline}`}
-        description={sellerData.about}
       />
 
       {/* Cover Image Section */}

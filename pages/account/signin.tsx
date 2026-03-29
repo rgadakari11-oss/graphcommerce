@@ -9,7 +9,7 @@ import { CompactAuthLayout } from '../../components/Layout/Compactauthlayout'
 import { graphqlSharedClient } from '../../lib/graphql/graphqlSsrClient'
 import { Box } from '@mui/material'
 
-function AccountSignInPage() {
+function SignInPage() {
   useMergeGuestWishlistWithCustomer()
 
   return (
@@ -57,9 +57,9 @@ const pageOptions: PageOptions = {
   },
 }
 
-AccountSignInPage.pageOptions = pageOptions
+SignInPage.pageOptions = pageOptions
 
-export default AccountSignInPage
+export default SignInPage
 
 /**
  * 👇 No layout props → {}

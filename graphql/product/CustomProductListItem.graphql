@@ -1,0 +1,37 @@
+fragment CustomProductListItem on ProductInterface {
+  uid
+  ...ProductLink
+  sku
+  name
+  location
+  seller
+  seller_id
+  mqa
+
+  small_image {
+    ...ProductImage
+  }
+
+  price_range {
+    minimum_price {
+      ...ProductListPrice
+    }
+  }
+
+  product_attributes: custom_attributesV2 {
+  items {
+    code
+
+    ... on AttributeValue {
+      value
+    }
+
+      ... on AttributeSelectedOptions {
+        selected_options {
+          label
+          value
+        }
+      }
+    }
+  }
+}

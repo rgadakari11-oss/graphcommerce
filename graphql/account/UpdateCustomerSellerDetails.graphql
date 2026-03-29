@@ -1,0 +1,19 @@
+mutation UpdateCustomerSellerDetails(
+  $email: String!
+  $mobile_number: String!
+  $is_seller: Boolean!
+) {
+  updateCustomerSellerDetails(
+    input: {
+      email: $email
+      mobile_number: $mobile_number
+      is_seller: $is_seller
+    }
+  ) {
+    success
+    message
+    email
+    mobile_number
+    is_seller
+  }
+}

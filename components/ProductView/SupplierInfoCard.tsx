@@ -1,19 +1,17 @@
 import React from 'react'
 import { Box, Typography, Tooltip, Chip, Divider, Button } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import { useQuery } from '@apollo/client'
-import { useRouter } from 'next/router'
-
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import CallIcon from '@mui/icons-material/Call'
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive'
 import StoreIcon from '@mui/icons-material/Store'
-
-
-import { VendorStoresDocument } from '../../graphql/vendorstore.gql'
+import { useState } from 'react'
+import { SellerActionDialog } from '../SellerActionDialog'
+import { ViewSellerContactDialog } from '../../components/Viewsellercontactdialog'
+import type { SellerActionType } from '../../hooks/useSellerAction'
 
 /* -------------------------------------------------------------------------- */
-/*                               SHARED COLORS                                 */
+/*                               SHARED COLORS                                */
 /* -------------------------------------------------------------------------- */
 const sellerColors = {
   trusted: {
@@ -40,34 +38,32 @@ const sellerColors = {
 /*                                   TYPES                                    */
 /* -------------------------------------------------------------------------- */
 type Props = {
-  sellerId?: number | string | null
+  seller?: any
+  productId?: number
+  sellerId?: number
+
 }
 
 /* -------------------------------------------------------------------------- */
 /*                             SUPPLIER INFO CARD                              */
 /* -------------------------------------------------------------------------- */
-export function SupplierInfoCard({ sellerId }: Props) {
-  const router = useRouter()
+export function SupplierInfoCard({ seller, productId, sellerId }: Props) {
+  const [dialogState, setDialogState] = useState<{
+    open: boolean
+    actionType: SellerActionType
+  }>({ open: false, actionType: 'NOTIFY_SELLER' })
 
-  // ✅ Always convert to Int for GraphQL
-  const customerId =
-    typeof sellerId === 'number'
-      ? sellerId
-      : sellerId
-        ? parseInt(sellerId, 10)
-        : undefined
+  const [contactOpen, setContactOpen] = useState(false)
 
-  const { data, loading, error } = useQuery(VendorStoresDocument, {
-    variables: {
-      customer_id: customerId,
-      status: 1,
-    },
-    skip: !Number.isInteger(customerId),
-  })
+  const openDialog = (actionType: SellerActionType) =>
+    setDialogState({ open: true, actionType })
 
-  if (loading || error || !data?.vendorStores?.length) return null
+  const closeDialog = () =>
+    setDialogState((prev) => ({ ...prev, open: false }))
 
-  const seller = data.vendorStores[0]
+  if (!seller) return null
+
+
   const sellerUrl = seller?.store_code ? `/seller/${seller.store_code}` : '#'
 
   return (
@@ -75,10 +71,9 @@ export function SupplierInfoCard({ sellerId }: Props) {
       sx={{
         p: 2,
         borderRadius: 2,
-        backgroundColor: '#f9f9f9',        // Slightly darker than white
-        border: '1px solid #ddd',           // Subtle professional border
-        boxShadow: '0 2px 6px rgba(0,0,0,0.08)', // Soft shadow for depth
-
+        backgroundColor: '#f9f9f9',
+        border: '1px solid #ddd',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
       }}
     >
       {/* ---------------------------- TITLE ---------------------------- */}
@@ -124,7 +119,6 @@ export function SupplierInfoCard({ sellerId }: Props) {
           flexWrap: 'wrap',
         }}
       >
-        {/* Trusted */}
         {seller?.trust_seal && (
           <Tooltip title="Verified & trusted seller" arrow>
             <Box
@@ -156,7 +150,6 @@ export function SupplierInfoCard({ sellerId }: Props) {
           </Tooltip>
         )}
 
-        {/* Top Seller */}
         {seller?.trust_seal && (
           <Tooltip title="Top rated seller" arrow>
             <Box
@@ -251,136 +244,121 @@ export function SupplierInfoCard({ sellerId }: Props) {
             }}
           />
         )}
+      </Box>
 
-        {seller?.trust_seal && (
-          <Tooltip title="Responds quickly" arrow>
-            <Box
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                px: '6px',
-                py: '2px',
-                borderRadius: '6px',
-                backgroundColor: sellerColors.fastResponse.bg,
-              }}
-            >
-              <CheckCircleIcon sx={{ fontSize: 14, color: sellerColors.fastResponse.icon }} />
-              <Typography
-                sx={{
-                  fontSize: '11px !important',
-                  fontWeight: 600,
-                  color: sellerColors.fastResponse.text,
-                  lineHeight: 1,
-                }}
-              >
-                Fast Response
-              </Typography>
-            </Box>
-          </Tooltip>
-        )}
+      {/* ----------------------------- ADDRESS ----------------------------- */}
+      {seller?.address && (
+        <Box sx={{ mt: 1 }}>
+          <Typography
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              fontSize: '15px !important',
+              fontWeight: 600,
+              color: 'black',
+              mb: '2px',
+            }}
+          >
+            <LocationOnIcon sx={{ fontSize: 14, color: sellerColors.location.icon }} />
+            Address
+          </Typography>
 
-        {seller?.address && (
-          <Box sx={{ mt: 1 }}>
-            {/* Address label */}
-            <Typography
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                fontSize: "15px !important",
-                fontWeight: 600,
-                color: 'black',
-                mb: '2px',
-              }}
-            >
-              <LocationOnIcon
-                sx={{ fontSize: 14, color: sellerColors.location.icon }}
-              />
-              Address
-            </Typography>
+          <Typography
+            sx={{
+              fontSize: '14px !important',
+              lineHeight: 1.4,
+              color: '#000',
+              pl: '18px',
+            }}
+          >
+            {seller.address}, {seller.area}, {seller.city}, {seller.pincode}, {seller.state}
+          </Typography>
+        </Box>
+      )}
 
-            {/* Address value */}
-            <Typography
-              sx={{
-                fontSize: "14px !important",
-                lineHeight: 1.4,
-                color: '#000', // black
-                pl: '18px',    // aligns text with label, not icon
-              }}
-            >
-              {seller.address}, {seller.area}, {seller.city},{seller.pincode}, {seller.state}
-            </Typography>
-          </Box>
-        )}
-
-        {/* ACTION BUTTONS */}
-        <Box
+      {/* -------------------------- ACTION BUTTONS -------------------------- */}
+      <Box
+        sx={{
+          mt: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+        }}
+      >
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setContactOpen(true)}
           sx={{
-            mt: 2,
-            display: 'flex',
-            flexDirection: 'column',
+            justifyContent: 'flex-start',
             gap: 1,
+            fontSize: 12,
+            fontWeight: 500,
           }}
         >
-          {/* View Number */}
-          <Button
-            variant="outlined"
-            size="small"
-            sx={{
-              justifyContent: 'flex-start',
-              gap: 1,
-              fontSize: 12,
-              fontWeight: 500,
-            }}
-          >
-            <CallIcon sx={{ fontSize: 16, color: '#007a6e' }} />
-            View Mobile Number
-          </Button>
+          <CallIcon sx={{ fontSize: 16, color: '#007a6e' }} />
+          View Mobile Number
+        </Button>
 
-          {/* Notify Seller */}
-          <Button
-            variant="outlined"
-            size="small"
-            sx={{
-              justifyContent: 'flex-start',
-              gap: 1,
-              fontSize: 12,
-              fontWeight: 500,
-            }}
-          >
-            <NotificationsActiveIcon sx={{ fontSize: 16, color: '#F9A825' }} />
-            Notify Seller
-          </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => openDialog('NOTIFY_SELLER')}
+          sx={{
+            justifyContent: 'flex-start',
+            gap: 1,
+            fontSize: 12,
+            fontWeight: 500,
+          }}
+        >
+          <NotificationsActiveIcon sx={{ fontSize: 16, color: '#F9A825' }} />
+          Notify Seller
+        </Button>
 
-          {/* Contact Seller */}
-          <Button
-            component="a"
-            href={sellerUrl}
-            size="small"
-            sx={{
-              justifyContent: 'flex-start',
-              gap: 1,
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: 'none',
-              backgroundColor: 'teal', // same green as years chip
-              color: '#ffffff',
-              borderRadius: '6px',
-              '&:hover': {
-                backgroundColor: '#C8E6C9',
-              },
-            }}
-          >
-            <StoreIcon sx={{ fontSize: 16, color: '#ffffff' }} />
-
-            Contact Seller
-          </Button>
-
-        </Box>
-
-
+        <Button
+          component="a"
+          href={sellerUrl}
+          size="small"
+          sx={{
+            justifyContent: 'flex-start',
+            gap: 1,
+            fontSize: 12,
+            fontWeight: 600,
+            textTransform: 'none',
+            backgroundColor: 'teal',
+            color: '#ffffff',
+            borderRadius: '6px',
+            '&:hover': {
+              backgroundColor: '#C8E6C9',
+            },
+          }}
+        >
+          <StoreIcon sx={{ fontSize: 16, color: '#ffffff' }} />
+          Contact Seller
+        </Button>
       </Box>
+      {/* Dialogs */}
+      {sellerId && productId && (
+        <>
+          <SellerActionDialog
+            open={dialogState.open}
+            onClose={closeDialog}
+            actionType={dialogState.actionType}
+            productId={productId}
+            sellerId={sellerId}
+          />
+
+          <ViewSellerContactDialog
+            open={contactOpen}
+            onClose={() => setContactOpen(false)}
+            seller={seller}
+            productId={productId}
+            sellerId={sellerId}
+          />
+        </>
+      )}
+
     </Box>
   )
 }

@@ -36,15 +36,15 @@ export function CustomProductPageGallery(props: CustomProductPageGalleryProps) {
       .map((item) =>
         item.__typename === 'ProductImage'
           ? {
-              src: item.url ?? '',
-              alt: item.label || undefined,
-              width,
-              height,
-            }
+            src: item.url ?? '',
+            alt: item.label || undefined,
+            width,
+            height,
+          }
           : {
-              src: '',
-              alt: `{${item.__typename} not yet supported}`,
-            },
+            src: '',
+            alt: `{${item.__typename} not yet supported}`,
+          },
       ) ?? []
 
   return (
@@ -54,19 +54,32 @@ export function CustomProductPageGallery(props: CustomProductPageGalleryProps) {
       aspectRatio={[width, height]}
       images={images}
       sx={[
-        // 🔥 REMOVE LEFT PADDING FROM SIDEBAR
         (theme) => ({
+          // remove sidebar padding
           '& .SidebarGallery-sidebar.variantMdDefault': {
             paddingLeft: 0,
+            padding: 0,
           },
 
-          // Optional: also control slider buttons alignment if needed
+          // remove GraphCommerce Row bottom spacing
+          '& .Row-root': {
+            marginBottom: 0,
+          },
+
+          // optional: if GC spacing is strong
+          '& .Row-root:last-child': {
+            marginBottom: 0,
+          },
+
+          // optional slider button position
           '& .SidebarGallery-centerRight': {
             right: theme.spacings.sm,
           },
         }),
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
+
+
     />
   )
 }

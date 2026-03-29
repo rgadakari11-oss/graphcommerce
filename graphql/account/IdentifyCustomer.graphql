@@ -1,0 +1,14 @@
+mutation IdentifyCustomer($email: String!) {
+  identifyCustomer(
+    input: {
+      email: $email
+    }
+  ) {
+    success
+    message
+    email
+    mobile_number
+    is_seller
+    entity_id
+  }
+}

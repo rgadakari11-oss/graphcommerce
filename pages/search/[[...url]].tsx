@@ -63,9 +63,9 @@ function SearchResultPage(props: SearchResultProps) {
         metaRobots={['noindex']}
         canonical='/search'
       />
-      <LayoutHeader floatingMd switchPoint={0}>
+      {/* <LayoutHeader floatingMd switchPoint={0}>
         <SearchField size='small' formControl={{ sx: { width: '81vw' } }} />
-      </LayoutHeader>
+      </LayoutHeader> */}
 
       <PrivateQueryMaskProvider mask={productList.mask}>
         {import.meta.graphCommerce.productFiltersPro &&
@@ -132,9 +132,9 @@ export const getServerSideProps: GetPageStaticProps = async (context) => {
     ? staticClient.query({ query: CategorySearchDocument, variables: { search } })
     : undefined
 
-    console.log('=== FILTER TYPES START ===')
-console.log(await filterTypes)
-console.log('=== FILTER TYPES END ===')
+  console.log('=== FILTER TYPES START ===')
+  console.log(await filterTypes)
+  console.log('=== FILTER TYPES END ===')
 
   const result = {
     props: {

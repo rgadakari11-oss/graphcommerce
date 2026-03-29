@@ -1,0 +1,15 @@
+query AttributeOptions {
+  customAttributeMetadata(
+    attributes: [
+      { attribute_code: "unit_of_measurement", entity_type: "catalog_product" }
+    ]
+  ) {
+    items {
+      attribute_code
+      attribute_options {
+        value
+        label
+      }
+    }
+  }
+}

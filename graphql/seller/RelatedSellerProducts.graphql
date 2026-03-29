@@ -1,0 +1,8 @@
+query RelatedSellerProducts($seller_id: Int!, $current_sku: String!) {
+  relatedSellerProducts(seller_id: $seller_id, current_sku: $current_sku) {
+    name
+    url_key
+    price
+    image
+  }
+}

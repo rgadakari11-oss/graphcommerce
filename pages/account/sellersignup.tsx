@@ -85,7 +85,7 @@ type Step = 'mobile' | 'otp'
 
 /* ---------------- Page ---------------- */
 
-function SignupCustomerPage() {
+function SellerSignupPage() {
   const theme = useTheme()
   const [step, setStep] = useState<Step>('mobile')
 
@@ -201,7 +201,7 @@ function SignupCustomerPage() {
        * Redirect to My Account
        */
 
-      router.replace('/business-signup')
+      router.replace('/sellerprofile-registration')
 
     } catch (e) {
       console.error(e)
@@ -831,11 +831,11 @@ function SignupCustomerPage() {
 
 /* ---------------- Layout ---------------- */
 
-SignupCustomerPage.pageOptions = {
+SellerSignupPage.pageOptions = {
   Layout: LayoutNavigation,
 } as PageOptions
 
-export default SignupCustomerPage
+export default SellerSignupPage
 
 /* ---------------- getStaticProps (ONLY Layout) ---------------- */
 
@@ -850,6 +850,7 @@ export const getStaticProps: GetPageStaticProps = async (context) => {
   return {
     props: {
       ...(await layout).data,
+      apolloState: staticClient.cache.extract(),
     },
     revalidate: 60 * 20,
   }

@@ -2,7 +2,7 @@ import React from 'react'
 import type { ImageProps } from '@graphcommerce/image'
 import { extendableComponent } from '@graphcommerce/next-ui'
 import type { SxProps, Theme } from '@mui/material'
-import { Skeleton, Typography, Tooltip, Box, Button } from '@mui/material'
+import { Skeleton, Typography, Tooltip, Box, Button, useMediaQuery, useTheme } from '@mui/material'
 import { useRouter } from 'next/router'
 
 import type { ProductListItemFragment } from '@graphcommerce/magento-product/Api/ProductListItem.gql'
@@ -32,12 +32,23 @@ import {
   ProductListItemImageAreas,
 } from '@graphcommerce/magento-product/components/ProductListItem/ProductListItemImageContainer'
 
-// import type { ProductListItemTitleAndPriceProps } from '@graphcommerce/magento-product/components/ProductListItem/ProductListItemTitleAndPrice'
-// import { ProductListItemTitleAndPrice } from '@graphcommerce/magento-product/components/ProductListItem/ProductListItemTitleAndPrice'
 import { CustomProductListItemTitleAndPriceProps } from './CustomProductListItemTitleAndPrice'
 import { CustomProductListItemTitleAndPrice } from './CustomProductListItemTitleAndPrice'
 
+import dynamic from 'next/dynamic'
+
+import {
+  ProductPageAddToCartActionsRow,
+} from '@graphcommerce/magento-product'
+import { CustomAddProductsToCartButton } from '../../components/addtocart/CustomAddProductsToCartButton'
+
+
 import { useProductSeller } from '../../hooks/useProductSeller'
+import { useState } from 'react'
+import { SellerActionDialog } from '../SellerActionDialog'
+import type { SellerActionType } from '../../hooks/useSellerAction'
+import { ViewSellerContactDialog } from '../Viewsellercontactdialog'
+
 
 /* ---------------------------------- STYLES ---------------------------------- */
 const { classes, selectors } = extendableComponent('MyProductListItem', [
@@ -68,6 +79,7 @@ export type SkeletonProps = BaseProps & { __typename: 'Skeleton' }
 export type ProductProps = BaseProps & ProductListItemFragment
 export type ProductListItemProps = ProductProps | SkeletonProps
 
+
 /* --------------------------- REAL PRODUCT ITEM --------------------------- */
 function ProductListItemReal(props: ProductProps) {
   const {
@@ -91,15 +103,41 @@ function ProductListItemReal(props: ProductProps) {
   } = props
 
   const router = useRouter()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'))
+
   const sellerId = seller_id ? Number(seller_id) : undefined
   const { seller } = useProductSeller(sellerId)
+  const AddToCartClient = dynamic(
+    () =>
+      import('../addtocart/CustomAddProductsToCartButton')
+        .then((mod) => mod.CustomAddProductsToCartButton),
+    { ssr: false }
+  )
+
 
   const productUrl = `/p/${props.url_key}`
   const sellerUrl = seller?.store_code ? `/seller/${seller.store_code}` : '#'
+  // Dialog state
+  const [dialogState, setDialogState] = useState<{
+    open: boolean
+    actionType: SellerActionType
+  }>({ open: false, actionType: 'NOTIFY_SELLER' })
+
+  const openDialog = (actionType: SellerActionType) =>
+    setDialogState({ open: true, actionType })
+
+  const closeDialog = () =>
+    setDialogState((prev) => ({ ...prev, open: false }))
+
+  const [contactOpen, setContactOpen] = useState(false)
+
+
   const titleAndPriceClasses = {
     titleContainer: classes.titleContainer,
-    title: classes.titleContainer,   // or a separate class if you have one
-    subtitle: classes.discount,      // or another suitable class
+    title: classes.titleContainer,
+    subtitle: classes.discount,
   }
 
   return (
@@ -108,21 +146,49 @@ function ProductListItemReal(props: ProductProps) {
         ...(Array.isArray(sx) ? sx : [sx]),
         {
           display: 'flex',
-          gap: 1,
-          p: 1,
+          flexDirection: 'row', // Always horizontal
+          gap: { xs: 1, sm: 1.5 },
+          p: { xs: 1.5, sm: 1 },
           backgroundColor: '#fff',
-          borderRadius: 2,
-          overflow: 'hidden', // ✅ prevents horizontal scroll
+          borderRadius: { xs: '12px', sm: 2 },
+          overflow: 'hidden',
+          border: '1px solid',
+          borderColor: 'divider',
+          transition: 'box-shadow 0.2s',
+          '&:hover': {
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          },
         },
       ]}
     >
       {/* IMAGE */}
-      <Box sx={{ flex: '0 0 180px', cursor: 'pointer' }} onClick={() => router.push(productUrl)}>
-        <ProductImageContainer className={classes.imageContainer}>
+      <Box
+        sx={{
+          flex: { xs: '0 0 100px', sm: '0 0 180px' },
+          width: { xs: '100px', sm: '180px' },
+          cursor: 'pointer',
+          flexShrink: 0,
+          display: { xs: 'flex', sm: 'block' }, // Flex on mobile only
+          alignItems: { xs: 'center', sm: 'initial' }, // Center on mobile only
+          alignSelf: { xs: 'stretch', sm: 'initial' }, // Stretch on mobile only
+        }}
+        onClick={() => router.push(productUrl)}
+      >
+        <ProductImageContainer
+          className={classes.imageContainer}
+          sx={{
+            width: '100%',
+            height: { xs: '100px', sm: 'auto' }, // Fixed on mobile, auto on desktop
+            '& img': {
+              objectFit: { xs: 'cover', sm: 'contain' }, // Cover on mobile, contain on desktop
+              height: { xs: '100%', sm: 'auto' },
+            },
+          }}
+        >
           <ProductListItemImage
             src={small_image?.url || '/images/placeholder-product.png'}
             alt={small_image?.label || name}
-            aspectRatio={aspectRatio}
+            aspectRatio={isMobile ? [1, 1] : aspectRatio}
             loading={loading}
             sizes={sizes}
             dontReportWronglySizedImages={dontReportWronglySizedImages}
@@ -132,14 +198,46 @@ function ProductListItemReal(props: ProductProps) {
           {!imageOnly && (
             <ProductListItemImageAreas
               classes={{
-                topLeft: classes.discount,  // e.g., your discount label
+                topLeft: classes.discount,
                 topRight: undefined,
                 bottomLeft: undefined,
                 bottomRight: undefined,
               }}
               topLeft={
                 <>
-                  <ProductDiscountLabel className={classes.discount} price_range={price_range} />
+                  {(() => {
+                    const regular = price_range?.minimum_price?.regular_price?.value
+                    const final = price_range?.minimum_price?.final_price?.value
+
+                    const hasDiscount =
+                      regular != null &&
+                      final != null &&
+                      regular > final
+
+                    const discountPercent = hasDiscount
+                      ? Math.round(((regular - final) / regular) * 100)
+                      : 0
+
+                    if (!hasDiscount) return null
+
+                    return (
+                      <Box
+                        sx={{
+                          backgroundColor: '#2e7d32', // green
+                          color: '#fff',
+                          px: 0.75,
+                          py: '2px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          display: 'inline-block',
+                        }}
+                      >
+                        {discountPercent}% OFF
+                      </Box>
+                    )
+                  })()}
+
                   {topLeft}
                 </>
               }
@@ -165,10 +263,10 @@ function ProductListItemReal(props: ProductProps) {
                   component="a"
                   href={productUrl}
                   sx={{
-                    fontSize: 13,
-                    fontWeight: 450,
+                    fontSize: { xs: 14, sm: 14 },
+                    fontWeight: 500,
                     lineHeight: 1.3,
-                    pt: '5px', // ✅ paddingTop added here
+                    pt: '5px',
                     color: 'text.primary',
                     textDecoration: 'none',
                     display: '-webkit-box',
@@ -182,60 +280,84 @@ function ProductListItemReal(props: ProductProps) {
               </Tooltip>
             }
           >
-            {price_range?.minimum_price && (
-              <Typography
-                sx={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: 'primary.main',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                ₹ {price_range?.minimum_price?.regular_price?.value != null
-                  ? price_range.minimum_price.regular_price.value.toLocaleString('en-IN')
-                  : '-'}
+            {price_range?.minimum_price && (() => {
+              const regular = price_range.minimum_price.regular_price?.value
+              const final = price_range.minimum_price.final_price?.value
 
-              </Typography>
-            )}
+              const hasDiscount =
+                regular != null &&
+                final != null &&
+                regular > final
+
+              return (
+                <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+                  {/* Final Price (Top) */}
+                  <Typography
+                    sx={{
+                      fontSize: { xs: 16, sm: 14 },
+                      fontWeight: 700,
+                      color: 'primary.main',
+                    }}
+                  >
+                    ₹ {final?.toLocaleString('en-IN') ?? '-'}
+                  </Typography>
+
+                  {/* Regular Price (Below) */}
+                  {hasDiscount && (
+                    <Typography
+                      sx={{
+                        fontSize: { xs: 12, sm: 12 },
+                        color: 'text.disabled',
+                        textDecoration: 'line-through',
+                      }}
+                    >
+                      ₹ {regular?.toLocaleString('en-IN')}
+                    </Typography>
+                  )}
+                </Box>
+              )
+            })()}
           </CustomProductListItemTitleAndPrice>
 
-
+          {/* LOCATION */}
           {seller?.area && (
             <Typography
               sx={{
-                fontSize: '14px !important',
+                fontSize: { xs: '13px !important', sm: '14px !important' },
                 fontWeight: 400,
                 lineHeight: 1.3,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
+                mt: { xs: 0.5, sm: 0 },
               }}
             >
-              <LocationOnIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+              <LocationOnIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: 'primary.main' }} />
               {seller.area}
               {seller.city ? `, ${seller.city}` : ''}
             </Typography>
           )}
 
+          {/* SELLER INFO */}
           {seller?.store_name && (
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.75,
-                mt: '9px',
+                gap: { xs: 0.5, sm: 0.75 },
+                mt: { xs: 1, sm: '9px' },
                 flexWrap: 'wrap',
               }}
             >
               {/* Store Icon */}
-              <StoreIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+              <StoreIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: 'primary.main' }} />
 
               {/* Seller Name */}
               <Typography
                 component="a"
                 href={sellerUrl}
                 sx={{
-                  fontSize: '14px !important',
+                  fontSize: { xs: '13px !important', sm: '14px !important' },
                   fontWeight: '400 !important',
                   lineHeight: '1.3 !important',
                   color: 'primary.main',
@@ -248,7 +370,7 @@ function ProductListItemReal(props: ProductProps) {
                 {seller.store_name}
               </Typography>
 
-              {/* TAGS CONTAINER */}
+              {/* TAGS - Hide some on mobile */}
               <Box
                 sx={{
                   display: 'flex',
@@ -265,19 +387,20 @@ function ProductListItemReal(props: ProductProps) {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '4px',
-                        px: '6px',
+                        px: { xs: '4px', sm: '6px' },
                         py: '2px',
                         borderRadius: '6px',
                         backgroundColor: '#F1F8F4',
                       }}
                     >
-                      <CheckCircleIcon sx={{ fontSize: 14, color: '#1B5E20' }} />
+                      <CheckCircleIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: '#1B5E20' }} />
                       <Typography
                         sx={{
-                          fontSize: '11px !important',
+                          fontSize: { xs: '10px !important', sm: '11px !important' },
                           fontWeight: 600,
                           color: '#1B5E20',
                           lineHeight: 1,
+                          display: { xs: 'none', sm: 'block' },
                         }}
                       >
                         Trusted
@@ -286,8 +409,8 @@ function ProductListItemReal(props: ProductProps) {
                   </Tooltip>
                 )}
 
-                {/* Top Seller */}
-                {seller?.trust_seal && (
+                {/* Top Seller - Desktop only */}
+                {seller?.trust_seal && !isMobile && (
                   <Tooltip title="Top rated seller" arrow>
                     <Box
                       sx={{
@@ -314,14 +437,9 @@ function ProductListItemReal(props: ProductProps) {
                     </Box>
                   </Tooltip>
                 )}
-
-
               </Box>
             </Box>
           )}
-
-
-
 
           {/* SELLER TRUST INFO */}
           <Box
@@ -329,27 +447,27 @@ function ProductListItemReal(props: ProductProps) {
               display: 'flex',
               alignItems: 'center',
               flexWrap: 'wrap',
-              gap: 1,
-              mb: '9px',
-              mt: '9px',
+              gap: { xs: 0.75, sm: 1 },
+              mb: { xs: 1, sm: '9px' },
+              mt: { xs: 1, sm: '9px' },
             }}
           >
             {/* GST */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-              <CheckCircleIcon sx={{ fontSize: 14, color: '#007a6e' }} />
-              <Typography sx={{ fontSize: '12px !important' }}>GST</Typography>
+              <CheckCircleIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: '#007a6e' }} />
+              <Typography sx={{ fontSize: { xs: '11px !important', sm: '12px !important' } }}>GST</Typography>
             </Box>
 
             {/* Email */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-              <CheckCircleIcon sx={{ fontSize: 12, color: '#007a6e' }} />
-              <Typography sx={{ fontSize: '12px !important' }}>Email</Typography>
+              <CheckCircleIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: '#007a6e' }} />
+              <Typography sx={{ fontSize: { xs: '11px !important', sm: '12px !important' } }}>Email</Typography>
             </Box>
 
             {/* Mobile */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-              <CheckCircleIcon sx={{ fontSize: 12, color: '#007a6e' }} />
-              <Typography sx={{ fontSize: '12px !important' }}>Mobile</Typography>
+              <CheckCircleIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: '#007a6e' }} />
+              <Typography sx={{ fontSize: { xs: '11px !important', sm: '12px !important' } }}>Mobile</Typography>
             </Box>
 
             {/* Member Since */}
@@ -358,18 +476,18 @@ function ProductListItemReal(props: ProductProps) {
                 label={`${seller?.years_in_business ?? 0} Years`}
                 size="small"
                 sx={{
-                  height: 18,
-                  fontSize: '11px !important',
+                  height: { xs: 16, sm: 18 },
+                  fontSize: { xs: '10px !important', sm: '11px !important' },
                   fontWeight: 600,
-                  backgroundColor: 'teal', // dark green bg
-                  color: '#ffffff',          // correct white
+                  backgroundColor: 'teal',
+                  color: '#ffffff',
                   borderRadius: '6px',
                 }}
               />
             )}
 
-            {/* Fast Response */}
-            {seller?.trust_seal && (
+            {/* Fast Response - Desktop only */}
+            {seller?.trust_seal && !isMobile && (
               <Tooltip title="Responds quickly" arrow>
                 <Box
                   sx={{
@@ -396,80 +514,121 @@ function ProductListItemReal(props: ProductProps) {
                 </Box>
               </Tooltip>
             )}
-
-
           </Box>
 
-
-
-
-
-
-
-          {/* ACTIONS */}
+          {/* ACTIONS - Responsive */}
           <Box
             sx={{
               display: 'flex',
-              gap: 0.75,
-              mt: 1.5,
-              flexWrap: 'nowrap', // prevents wrapping
+              gap: { xs: 0.5, sm: 0.75 },
+              mt: { xs: 1, sm: 1.5 },
+              flexWrap: 'wrap',
             }}
           >
             {/* View Number */}
             <Button
               variant="outlined"
               size="small"
+              onClick={() => setContactOpen(true)}
               sx={{
-                minHeight: 30,
-                px: 1,
-                fontSize: 11,
+                minHeight: { xs: 28, sm: 30 },
+                px: { xs: 0.75, sm: 1 },
+                fontSize: { xs: 10, sm: 11 },
                 whiteSpace: 'nowrap',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
+                flex: { xs: '1 1 auto', sm: '0 0 auto' },
               }}
             >
-              <CallIcon sx={{ fontSize: 14, color: '#007a6e' }} />
-              View Number
+              <CallIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: '#007a6e' }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>View Number</Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Call</Box>
             </Button>
 
             {/* Quote */}
-            <Button
-              variant="outlined"
-              size="small"
-              sx={{
-                minHeight: 30,
-                px: 1,
-                fontSize: 11,
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-              }}
-            >
-              <ReceiptIcon sx={{ fontSize: 14, color: 'black' }} />
-              Quote
-            </Button>
+            <ProductPageAddToCartActionsRow product={props}>
+              <AddToCartClient
+                product={props}
+                variant="outlined"
+                size="small"
+                startIcon={<ReceiptIcon sx={{ fontSize: { xs: 12, sm: 14 } }} />}
+                sx={{
+                  minHeight: { xs: 28, sm: 30 },
+                  px: { xs: 0.75, sm: 1 },
+                  fontSize: { xs: 10, sm: 11 },
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  flex: { xs: '1 1 auto', sm: '0 0 auto' },
+                }}
+              >
+                Add to Quote
+              </AddToCartClient>
+            </ProductPageAddToCartActionsRow>
+
+
+            {/* <Box sx={{
+              minHeight: { xs: 28, sm: 30 },
+              px: { xs: 0.75, sm: 1 },
+              fontSize: { xs: 10, sm: 11 },
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              flex: { xs: '1 1 auto', sm: '0 0 auto' },
+            }}>
+              <ReceiptIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: 'black' }} />
+              <ProductPageAddToCartActionsRow product={props}>
+                <CustomAddProductsToCartButton product={props} />
+              </ProductPageAddToCartActionsRow>
+            </Box> */}
+
+
 
             {/* Notify Seller */}
             <Button
               variant="outlined"
               size="small"
+              onClick={() => openDialog('NOTIFY_SELLER')}
               sx={{
-                minHeight: 30,
-                px: 1,
-                fontSize: 11,
+                minHeight: { xs: 28, sm: 30 },
+                px: { xs: 0.75, sm: 1 },
+                fontSize: { xs: 10, sm: 11 },
                 whiteSpace: 'nowrap',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
+                flex: { xs: '1 1 auto', sm: '0 0 auto' },
               }}
             >
-              <NotificationsActiveIcon sx={{ fontSize: 14, color: 'gold' }} />
-              Notify Seller
+              <NotificationsActiveIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: 'gold' }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Notify Seller</Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Notify</Box>
             </Button>
           </Box>
+          {sellerId && props.id && (
+            <SellerActionDialog
+              open={dialogState.open}
+              onClose={closeDialog}
+              actionType={dialogState.actionType}
+              productId={Number(props.id)}
+              sellerId={sellerId}
+              unitLabel=''
+            />
+          )}
 
+          {/* View Contact Dialog */}
+          {sellerId && props.id && (
+            <ViewSellerContactDialog
+              open={contactOpen}
+              onClose={() => setContactOpen(false)}
+              seller={seller}
+              productId={Number(props.id)}
+              sellerId={sellerId}
+            />
+          )}
 
 
 
@@ -484,8 +643,15 @@ function ProductListItemSkeleton(props: BaseProps) {
   const { aspectRatio, imageOnly = false } = props
 
   return (
-    <Box sx={{ display: 'flex', gap: 2 }}>
-      <Box sx={{ width: 180 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'row', // Always horizontal
+        gap: { xs: 1, sm: 2 },
+        p: { xs: 1.5, sm: 1 },
+      }}
+    >
+      <Box sx={{ width: { xs: 100, sm: 180 }, height: { xs: 100, sm: 'auto' }, flexShrink: 0 }}>
         <ProductImageContainer>
           <ProductListItemImageSkeleton aspectRatio={aspectRatio} />
         </ProductImageContainer>

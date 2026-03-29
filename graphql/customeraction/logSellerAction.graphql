@@ -1,0 +1,22 @@
+mutation LogSellerAction(
+  $product_id: Int!
+  $seller_id: Int!
+  $action_type: String!
+  $quantity: Float
+  $unit: String
+  $customer_name: String
+  $phone_number: String
+) {
+  logSellerAction(
+    product_id: $product_id
+    seller_id: $seller_id
+    action_type: $action_type
+    quantity: $quantity
+    unit: $unit
+    customer_name: $customer_name
+    phone_number: $phone_number
+  ) {
+    success
+    message
+  }
+}

@@ -13,9 +13,11 @@ export default function SellerAbout({ aboutUs }: SellerAboutProps) {
         About Us
       </Typography>
 
-      <Typography sx={{ mt: 1 }}>
-        {aboutUs}
-      </Typography>
+      <Typography
+        sx={{ mt: 1 }}
+        component="div"
+        dangerouslySetInnerHTML={{ __html: aboutUs }}
+      />
     </Paper>
   )
 }

@@ -133,6 +133,6 @@ export const getServerSideProps: GetSSP = async (context) => {
 
   flushMeasurePerf()
 
-  if ('props' in result) return { props: { ...result.props, up: null } }
+  if ('props' in result) return { props: { ...result.props, up: undefined } }
   return result
 }

@@ -88,7 +88,8 @@ export default function SellerReviews({
   return (
     <Box mb={4}>
       {/* Section title */}
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
+      <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ pl: '15px' }}
+      >
         What Our Customers Say
       </Typography>
 

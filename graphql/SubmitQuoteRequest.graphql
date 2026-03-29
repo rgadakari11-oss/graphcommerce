@@ -1,0 +1,5 @@
+mutation SubmitQuoteRequest($input: QuoteRequestInput!) {
+  submitQuoteRequest(input: $input) {
+    order_number
+  }
+}

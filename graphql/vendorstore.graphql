@@ -2,11 +2,13 @@ query VendorStores(
   $customer_id: Int
   $status: Int
   $mobile: String
+  $store_code: String
 ) {
   vendorStores(
     customer_id: $customer_id
     status: $status
     mobile: $mobile
+    store_code: $store_code
   ) {
     store_id
     customer_id

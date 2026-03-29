@@ -45,21 +45,21 @@ export function CustomProductSpecs(props: CustomProductSpecsProps) {
           margin: 0,
           padding: 0,
           '& .SectionHeader-root': {
-            marginBottom: '4px', // ⬇ reduced top space
+            marginBottom: '4px',
           },
           '& .SectionHeader-title': {
-            fontSize: '0.95rem',
+            fontSize: { xs: '0.9rem', sm: '0.95rem' },
             fontWeight: 600,
           },
         }}
       >
-        {/* 🔹 B2B SUMMARY STRIP (NO TOP LINE) */}
+        {/* 🔹 B2B SUMMARY STRIP */}
         <Box
           className={classes.summary}
           sx={(theme) => ({
             display: 'flex',
             flexWrap: 'wrap',
-            gap: '6px',
+            gap: { xs: '5px', sm: '6px' },
             marginTop: '2px',
             marginBottom: '6px',
           })}
@@ -69,16 +69,25 @@ export function CustomProductSpecs(props: CustomProductSpecsProps) {
               key={spec?.attribute_code}
               sx={(theme) => ({
                 backgroundColor: theme.palette.grey[50],
-                padding: '4px 8px',
-                borderRadius: '4px',
-                fontSize: '0.8rem',
+                padding: { xs: '4px 7px', sm: '4px 8px' },
+                borderRadius: { xs: '6px', sm: '4px' },
+                fontSize: { xs: '0.72rem', sm: '0.8rem' },
+                lineHeight: 1.3,
+                border: { xs: `1px solid ${theme.palette.grey[200]}`, sm: 'none' },
+                boxShadow: {
+                  xs: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  sm: 'none'
+                },
+                transition: 'transform 0.2s ease',
+                '&:active': {
+                  transform: { xs: 'scale(0.98)', sm: 'none' },
+                },
               })}
             >
               <strong>{spec?.label}:</strong> {spec?.options?.[0]?.label ?? '-'}
             </Box>
           ))}
         </Box>
-
 
         {/* 🔹 FULL TECHNICAL TABLE */}
         <Box
@@ -88,32 +97,55 @@ export function CustomProductSpecs(props: CustomProductSpecsProps) {
             listStyle: 'none',
             margin: 0,
             padding: 0,
-            paddingBottom: '10px',
+            paddingLeft: '10px',
+            paddingBottom: { xs: '6px', sm: '10px' },
 
             '& > li': {
               display: 'grid',
-              gridTemplateColumns: '45% 55%',
-              alignItems: 'center',
-
-              padding: '4px 0',
-              fontSize: '0.9rem',
+              gridTemplateColumns: { xs: '1fr', sm: '45% 55%' },
+              alignItems: { xs: 'start', sm: 'center' },
+              gap: { xs: '1px', sm: 0 },
+              padding: { xs: '7px 4px', sm: '4px 0' },
+              fontSize: { xs: '0.82rem', sm: '0.9rem' },
               lineHeight: 1.4,
-
               borderBottom: `1px dashed ${theme.palette.divider}`,
 
+              // Mobile enhancement
+              [theme.breakpoints.down('sm')]: {
+                backgroundColor: 'transparent',
+                borderRadius: '4px',
+                transition: 'background-color 0.15s ease',
+
+                '&:active': {
+                  backgroundColor: theme.palette.grey[50],
+                },
+              },
+
               '& > *:first-of-type': {
-                fontWeight: 600,
+                fontWeight: 500,
+                color: '#000',
+
+                // Mobile: smaller, uppercase label
+                [theme.breakpoints.down('sm')]: {
+                  fontSize: '0.68rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.4px',
+                  marginBottom: '2px',
+                },
+              },
+
+              '& > *:last-of-type': {
+                fontWeight: 400,
+                color: '#000',
+
+                [theme.breakpoints.down('sm')]: {
+                  fontSize: '0.82rem',
+                },
               },
             },
 
             '& > li:last-of-type': {
               borderBottom: 'none',
-            },
-
-            [theme.breakpoints.down('sm')]: {
-              '& > li': {
-                gridTemplateColumns: '1fr',
-              },
             },
           })}
         >

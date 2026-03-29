@@ -1,0 +1,73 @@
+[
+  {
+    "category_name": "Home Essentials",
+    "category_image": "https://tiimg.tistatic.com/new_website1/ti-revamp/icons/home-supplies.svg",
+    "children": [
+      {
+        "category_name": "Bags & Carry Solutions",
+        "category_image": "https://tiimg.tistatic.com/categoryimg/v1/1/Bags-Cases-1212.jpg",
+        "children": [
+          { "category_name": "Fashion Handbags" },
+          { "category_name": "Men's Wallets" },
+          { "category_name": "Travel Duffle Bags" },
+          { "category_name": "Everyday Backpacks" },
+          { "category_name": "Laptop Carry Bags" }
+        ]
+      },
+      {
+        "category_name": "Single-Use Products",
+        "category_image": "https://tiimg.tistatic.com/categoryimg/v1/1/Disposable-Products-1385.jpg",
+        "children": [
+          { "category_name": "Disposable Cups" },
+          { "category_name": "Wooden Ice Cream Sticks" },
+          { "category_name": "Plastic Drinking Cups" },
+          { "category_name": "Plastic Serving Plates" },
+          { "category_name": "Paper Drinking Straws" }
+        ]
+      },
+      {
+        "category_name": "Cleaning & Utility Items",
+        "category_image": "https://tiimg.tistatic.com/categoryimg/v1/1/Housekeeping-Products-953.jpg",
+        "children": [
+          { "category_name": "Washing Machine Stands" },
+          { "category_name": "Household Dustbins" },
+          { "category_name": "Water Buckets" },
+          { "category_name": "Microfiber Cleaning Cloths" }
+        ]
+      },
+      {
+        "category_name": "Eco-Friendly Jute Bags",
+        "category_image": "https://tiimg.tistatic.com/categoryimg/v1/1/Jute-Bags-1564.jpg",
+        "children": [
+          { "category_name": "Jute Lunch Carriers" },
+          { "category_name": "Jute Hand Bags" },
+          { "category_name": "Jute Sling Bags" },
+          { "category_name": "Jute Tote Carry Bags" },
+          { "category_name": "Jute Storage Sacks" }
+        ]
+      },
+      {
+        "category_name": "Kitchen Equipment & Accessories",
+        "category_image": "https://tiimg.tistatic.com/categoryimg/v1/1/Kitchen-Canteen-Accessories-Equipment-1241.jpg",
+        "children": [
+          { "category_name": "Kitchen Chimneys" },
+          { "category_name": "Gas Stove Lighters" },
+          { "category_name": "Kitchen Utility Items" },
+          { "category_name": "Modular Kitchen Trolleys" },
+          { "category_name": "Kitchen Storage Racks" }
+        ]
+      },
+      {
+        "category_name": "Kitchen Tools & Utensils",
+        "category_image": "https://tiimg.tistatic.com/categoryimg/v1/1/Kitchenware-497.jpg",
+        "children": [
+          { "category_name": "Vegetable Cutters" },
+          { "category_name": "Drink Tumblers" },
+          { "category_name": "Lunch Storage Boxes" },
+          { "category_name": "Kitchen Beaters" },
+          { "category_name": "Cooking Spatulas" }
+        ]
+      }
+    ]
+  }
+]

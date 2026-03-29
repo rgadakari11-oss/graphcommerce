@@ -83,7 +83,7 @@ function CheckoutAdded() {
         <Box gridArea='children'>
           <Box sx={{ typography: 'h6' }} tabIndex={-1} ref={a11yFocusRef}>
             <Trans>
-              <strong>{name}</strong> has been added to your shopping cart!
+              <strong>{name}</strong> has been added to your Quote!
             </Trans>
           </Box>
           {crossSellItems.length > 0 && (
@@ -102,7 +102,7 @@ function CheckoutAdded() {
             endIcon={<IconSvg src={iconChevronRight} />}
             sx={{ display: 'flex' }}
           >
-            <Trans>View shopping cart</Trans>
+            <Trans>View Quote</Trans>
           </Button>
         </Box>
         <LayoutHeaderClose />
@@ -124,7 +124,7 @@ function CheckoutAdded() {
               <Trans>Complete your purchase</Trans>
             </Typography>
           </Container>
-          
+
         </>
       )}
     </>

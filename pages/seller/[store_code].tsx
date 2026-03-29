@@ -36,10 +36,11 @@ export default function SellerPage() {
   /* -------------------------------
    * Fetch Seller by store_code
    * ------------------------------- */
+  console.log(store_code);
+  console.log("store_code");
   const { data: storeData, loading: storeLoading, error: storeError } =
     useQuery(VendorStoresDocument, {
       variables: { store_code: String(store_code), status: 1 },
-      skip: !store_code,
     })
 
   const store = storeData?.vendorStores?.[0]

@@ -2,4 +2,11 @@ import { createServer } from '@graphcommerce/graphql-mesh'
 
 export default await createServer('/api/graphql')
 
-export const config = { api: { externalResolver: true } }
+export const config = {
+  api: {
+    externalResolver: true,
+    bodyParser: {
+      sizeLimit: '20mb', // 🔥 increase as needed
+    },
+  },
+}

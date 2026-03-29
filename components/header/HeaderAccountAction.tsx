@@ -8,7 +8,7 @@ import {
 } from '@graphcommerce/next-ui'
 import { i18n } from '@lingui/core'
 import type { BadgeProps, FabProps as FabPropsType, SxProps, Theme } from '@mui/material'
-import { Fab, NoSsr } from '@mui/material'
+import { Fab, NoSsr, Typography, Box } from '@mui/material'
 import type { UseCustomerSessionReturn } from '@graphcommerce/magento-customer/hooks'
 import { useCustomerAccountCanSignIn, useCustomerSession } from '@graphcommerce/magento-customer/hooks'
 import { CompactAuthLayout } from '../Layout/Compactauthlayout'
@@ -55,7 +55,7 @@ function HeaderAccountActionContent(
   // If already logged in → go to account page
   const handleClick = () => {
     if (session?.loggedIn) {
-      router.push('/account')
+      router.push('/seller/dashboard')
       return
     }
     openLoginModal()
@@ -68,10 +68,24 @@ function HeaderAccountActionContent(
         color='inherit'
         id='account'
         aria-label={i18n._(/* i18n */ 'Account')}
-        size='large'
+        size='small'
         className={classes.root}
         {...FabProps}
-        sx={{ boxShadow: 'none', bgcolor: 'transparent', ...sx }}
+        sx={{
+          boxShadow: 'none',
+          bgcolor: 'transparent',
+          px: 1.5,
+          minWidth: 'auto',
+          height: 26,                 // 🔑 lock height
+          minHeight: 26,
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: '4px',
+          ml: "12px",
+          mr: "12px",
+          ...sx,
+        }}
       >
         <DesktopHeaderBadge
           badgeContent={session?.token ? 1 : 0}
@@ -80,8 +94,25 @@ function HeaderAccountActionContent(
           overlap='circular'
           {...BadgeProps}
         >
-          {icon ?? <IconSvg src={iconPerson} size='large' />}
+          {icon ?? <IconSvg src={iconPerson} size='medium' />}
         </DesktopHeaderBadge>
+
+        <Typography
+          variant="caption"
+          sx={{
+            fontSize: "11px !important",
+            fontWeight: 600,
+            lineHeight: '1',            // 🔑 prevents extra vertical space
+            display: 'flex',
+            alignItems: 'center',
+            whiteSpace: 'nowrap',
+
+          }}
+        >
+          {session?.loggedIn
+            ? i18n._(/* i18n */ 'Account')
+            : i18n._(/* i18n */ 'Login')}
+        </Typography>
       </Fab>
 
       {open && !session?.loggedIn && (

@@ -19,7 +19,7 @@ export default function ThemedApp(props: AppProps) {
     <CssAndFramerMotionProvider {...props}>
       <I18nProvider key={locale} locale={locale}>
         <GraphQLProvider {...props}>
-          <DarkLightModeThemeProvider light={lightTheme} dark={darkTheme}>
+          <DarkLightModeThemeProvider light={lightTheme} dark={lightTheme}>
             <GlobalHead />
             <CssBaseline />
             <PageLoadIndicator />

@@ -117,7 +117,7 @@ export function ProductListItemReal(props: ProductProps) {
           ? slotProps.root.sx
           : [slotProps.root?.sx]),
         {
-          display: 'flex !important', 
+          display: 'flex !important',
           flexDirection: 'row !important',
           alignItems: 'flex-start',
           gap: 3,
@@ -126,12 +126,12 @@ export function ProductListItemReal(props: ProductProps) {
           padding: '8px !important',                // spacing around the white card
           borderRadius: '8px !important',             // rounded corners
 
-    },
+        },
       ]}
       ref={slotProps.root?.ref as React.Ref<HTMLAnchorElement | HTMLDivElement>}
     >
       {/* LEFT SIDE — IMAGE BLOCK */}
-      <div style={{ flex: '0 0 180px' ,height: '100%'}}>
+      <div style={{ flex: '0 0 180px', height: '100%' }}>
         <ProductImageContainer className={classes.imageContainer} style={{ height: '100%' }}   >
           <ProductListItemImage
             classes={classes}
@@ -184,7 +184,7 @@ export function ProductListItemReal(props: ProductProps) {
           >
             <ProductListPrice {...price_range.minimum_price} />
           </ProductListItemTitleAndPrice>
-        <div style={{ fontSize: 14, marginTop: 5, fontWeight: 500, color: '#222' }}>
+          <div style={{ fontSize: 14, marginTop: 5, fontWeight: 500, color: '#222' }}>
             Prabhat Paint222 Industries
           </div>
           <div
@@ -196,15 +196,15 @@ export function ProductListItemReal(props: ProductProps) {
               display: 'flex',
               alignItems: 'center',
             }}
-            >
-            <svg 
-              width="16" 
-              height="16" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              xmlns="http://www.w3.org/2000/svg" 
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
               style={{ marginRight: 6 }}
-              >
+            >
               <path
                 d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z"
                 stroke="#1976d2"
@@ -212,69 +212,69 @@ export function ProductListItemReal(props: ProductProps) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-              <circle 
-                cx="12" 
-                cy="9" 
-                r="2.5" 
-                stroke="#1976d2" 
-                strokeWidth="2" 
+              <circle
+                cx="12"
+                cy="9"
+                r="2.5"
+                stroke="#1976d2"
+                strokeWidth="2"
               />
             </svg>
             0i - Goregaon East
           </div>
 
           {/* TWO BUTTONS AT BOTTOM */}
-    <div
-      style={{
-        display: 'flex',
-        gap: '10px',
-        marginTop: 16,
-      }}
-    >
-      {/* Button 1 - Contact Seller */}
-      <button
-        style={{
-          flex: 1,
-            padding: '10px 0',
-          background: 'white ',
-          color: '#1976d2',
-          border: '1px solid #1976d2',
-          borderRadius: 6,
-          fontWeight: 600,
-          fontSize: 15,
-          cursor: 'pointer',
-          transition: '0.2s',
-        }}
-        onMouseOver={(e) => (e.currentTarget.style.background = 'white')}
-        onMouseOut={(e) => (e.currentTarget.style.background = 'white')}
-      >
-        View Numberddd
-      </button>
-      console.log('CUSTOM productListRenderer loaded')
+          <div
+            style={{
+              display: 'flex',
+              gap: '10px',
+              marginTop: 16,
+            }}
+          >
+            {/* Button 1 - Contact Seller */}
+            <button
+              style={{
+                flex: 1,
+                padding: '10px 0',
+                background: 'white ',
+                color: '#1976d2',
+                border: '1px solid #1976d2',
+                borderRadius: 6,
+                fontWeight: 600,
+                fontSize: 15,
+                cursor: 'pointer',
+                transition: '0.2s',
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.background = 'white')}
+              onMouseOut={(e) => (e.currentTarget.style.background = 'white')}
+            >
+              View Numberddd
+            </button>
+            console.log('CUSTOM productListRenderer loaded')
 
 
-      {/* Button 2 - View Number */}
-      <button
-        style={{
-          flex: 1,
-          padding: '10px 0',
-          background: '#0b7d7d',
-          color: '#fff',
-          border: 'none',
-          borderRadius: 6,
-          fontWeight: 600,
-          fontSize: 15,
-          cursor: 'pointer',
-          transition: '0.2s',
-        }}
-        onMouseOver={(e) => (e.currentTarget.style.background = '#0a6c6c')}
-        onMouseOut={(e) => (e.currentTarget.style.background = '#0b7d7d')}
-      >
-        Contact Seller11111
-      </button>
-    </div>
+            {/* Button 2 - View Number */}
+            <button
+              style={{
+                flex: 1,
+                padding: '10px 0',
+                background: '#0b7d7d',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                fontWeight: 600,
+                fontSize: 15,
+                cursor: 'pointer',
+                transition: '0.2s',
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.background = '#0a6c6c')}
+              onMouseOut={(e) => (e.currentTarget.style.background = '#0b7d7d')}
+            >
+              Contact Seller
+            </button>
+          </div>
 
-          
+
 
           {children}
         </div>
