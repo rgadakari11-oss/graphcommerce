@@ -1700,7 +1700,7 @@ export default function SellerPage() {
         {/* ══ HERO BANNER ══ */}
         <SellerHeroBanner
           storeName={store.store_name || ''}
-          tagline={store.tagline || 'Quality products. Reliable supply. Trusted by businesses.'}
+          tagline='Quality products. Reliable supply. Trusted by businesses.'
           phone={store.phone || ''}
           onInquiry={() => scrollToSection(3)}
         />
@@ -1760,8 +1760,8 @@ export default function SellerPage() {
                   country={store.country || 'India'}
                   pincode={store.pincode || ''}
                   gstNumber={store.gst_number || ''}
-                  googleMapUrl={store.google_map_url || ''}
-                  directionsUrl={store.directions_url || ''}
+                  googleMapUrl=''
+                  directionsUrl=''
                 />
               </div>
             </Grid>

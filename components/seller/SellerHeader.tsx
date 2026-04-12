@@ -138,42 +138,8 @@ export default function SellerHeader({ data, activeSection, onNavClick }: Props)
                     sx={{ fontWeight: 500, fontSize: '0.7rem', height: 22 }}
                   />
                 )}
-                {yearsInBusiness > 0 && (
-                  <Chip
-                    label={`${yearsInBusiness} yrs in business`}
-                    size="small"
-                    variant="outlined"
-                    sx={{ fontWeight: 500, fontSize: '0.7rem', height: 22 }}
-                  />
-                )}
-                {responseRate > 0 && (
-                  <Chip
-                    label={`${responseRate}% Response Rate`}
-                    size="small"
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '0.7rem',
-                      height: 22,
-                      bgcolor: 'success.50',
-                      color: 'success.dark',
-                      border: '1px solid',
-                      borderColor: 'success.light',
-                    }}
-                  />
-                )}
-                {rating > 0 && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                    <StarIcon sx={{ fontSize: 15, color: 'warning.main' }} />
-                    <Typography variant="caption" fontWeight={600}>
-                      {rating}
-                    </Typography>
-                    {ratingCount > 0 && (
-                      <Typography variant="caption" color="text.secondary">
-                        ({ratingCount} reviews)
-                      </Typography>
-                    )}
-                  </Box>
-                )}
+
+
               </Box>
             </Box>
 
