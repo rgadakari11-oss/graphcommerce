@@ -173,7 +173,7 @@ export function Footer() {
                   }}
                 >
                   {badge.icon}
-                  <Typography sx={{ fontSize: '11px', color: '#1d4ed8', fontWeight: 500 }}>
+                  <Typography sx={{ fontSize: '14px !important', color: '#1d4ed8', fontWeight: 500 }}>
                     {badge.label}
                   </Typography>
                 </Box>
@@ -254,7 +254,7 @@ export function Footer() {
               }}
             >
               <WhatsAppIcon sx={{ fontSize: 14, color: '#16a34a' }} />
-              <Typography sx={{ fontSize: '12px', color: '#15803d', fontWeight: 500 }}>
+              <Typography sx={{ fontSize: '14px !important', color: '#15803d', fontWeight: 500 }}>
                 Chat with us on WhatsApp
               </Typography>
             </Box>

@@ -11,6 +11,7 @@ import { Trans } from '@lingui/react'
 import { Container, Grid, Paper, Box, Typography, alpha, useMediaQuery, useTheme, Badge, Divider } from '@mui/material'
 import { useRouter } from 'next/router'
 import DashboardIcon from '@mui/icons-material/Dashboard'
+import AccountCircle from '@mui/icons-material/AccountCircle'
 import StorefrontIcon from '@mui/icons-material/Storefront'
 import MailOutlineIcon from '@mui/icons-material/MailOutline'
 import InventoryIcon from '@mui/icons-material/Inventory'
@@ -138,6 +139,12 @@ export function SellerAccountLayout({ children }: Props) {
       href: '/seller/dashboard',
       icon: DashboardIcon,
       title: 'Dashboard',
+      badge: null,
+    },
+    {
+      href: '/seller/profile',
+      icon: AccountCircle,
+      title: 'Profile',
       badge: null,
     },
     {

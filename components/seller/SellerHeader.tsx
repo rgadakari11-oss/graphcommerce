@@ -1,22 +1,33 @@
 import {
   Paper,
-  Grid,
   Avatar,
   Typography,
   Button,
   Chip,
   Box,
   Container,
+  Tab,
+  Tabs,
   useTheme,
+  useScrollTrigger,
 } from '@mui/material'
+import VerifiedIcon from '@mui/icons-material/Verified'
+import StarIcon from '@mui/icons-material/Star'
+import PhoneIcon from '@mui/icons-material/Phone'
+import EmailIcon from '@mui/icons-material/Email'
 import { SellerHeaderData } from './types'
 
 interface Props {
   data: SellerHeaderData
+  activeSection: number
+  onNavClick: (index: number) => void
 }
 
-export default function SellerHeader({ data }: Props) {
+const NAV_ITEMS = ['Overview', 'Products & Services', 'Reviews', 'Reach Us']
+
+export default function SellerHeader({ data, activeSection, onNavClick }: Props) {
   const theme = useTheme()
+  const trigger = useScrollTrigger({ disableHysteresis: true, threshold: 80 })
 
   const {
     storeName,
@@ -32,152 +43,228 @@ export default function SellerHeader({ data }: Props) {
   } = data
 
   return (
-    <Paper
-      elevation={1}
+    <Box
+      component="header"
       sx={{
-        borderBottom: `2px solid ${theme.palette.primary.main}`,
-        py: 2,
-        mb: 3,
-        borderRadius: 0,
-        background: theme.palette.background.paper,
+        position: 'sticky',
+        top: 0,
+        zIndex: 1100,
+        bgcolor: 'background.paper',
+        boxShadow: trigger
+          ? '0 2px 12px rgba(0,0,0,0.10)'
+          : '0 1px 0 rgba(0,0,0,0.08)',
+        transition: 'box-shadow 0.2s ease',
       }}
     >
-      <Container maxWidth="lg">
-        <Grid container alignItems="center" spacing={2}>
-          {/* ===== LOGO ===== */}
-          <Grid item>
+      {/* ── TOP STRIP ── */}
+      <Box
+        sx={{
+          borderBottom: `1px solid`,
+          borderColor: 'divider',
+          py: { xs: 1.5, md: 2 },
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: { xs: 1.5, md: 2.5 },
+              flexWrap: 'wrap',
+            }}
+          >
+            {/* LOGO */}
             <Avatar
               src={logoUrl}
               sx={{
-                width: 64,
-                height: 64,
+                width: { xs: 52, md: 64 },
+                height: { xs: 52, md: 64 },
                 bgcolor: theme.palette.primary.main,
-                color: theme.palette.primary.contrastText,
-                fontSize: '1.8rem',
-                fontWeight: 'bold',
+                color: '#fff',
+                fontSize: '1.6rem',
+                fontWeight: 700,
+                border: `2px solid ${theme.palette.primary.light}`,
+                flexShrink: 0,
               }}
             >
               {!logoUrl && storeName?.[0]}
             </Avatar>
-          </Grid>
 
-          {/* ===== STORE INFO ===== */}
-          <Grid item xs>
-            {/* Store name */}
-            <Typography
-              variant="h5"
-              fontWeight="bold"
-              sx={{ color: theme.palette.primary.main, mb: 0.5 }}
-            >
-              {storeName}
-            </Typography>
+            {/* STORE INFO */}
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  sx={{
+                    color: 'text.primary',
+                    lineHeight: 1.2,
+                    fontSize: { xs: '1rem', md: '1.2rem' },
+                  }}
+                >
+                  {storeName}
+                </Typography>
+                {trustSeal && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                    <VerifiedIcon
+                      sx={{ fontSize: 18, color: theme.palette.primary.main }}
+                    />
+                    <Typography
+                      variant="caption"
+                      fontWeight={600}
+                      sx={{ color: theme.palette.primary.main }}
+                    >
+                      TrustSEAL Verified
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
 
-            {/* Chips + Rating */}
+              {/* META CHIPS */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 0.75,
+                  mt: 0.5,
+                }}
+              >
+                {gstNumber && (
+                  <Chip
+                    label={`GST: ${gstNumber}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ fontWeight: 500, fontSize: '0.7rem', height: 22 }}
+                  />
+                )}
+                {yearsInBusiness > 0 && (
+                  <Chip
+                    label={`${yearsInBusiness} yrs in business`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ fontWeight: 500, fontSize: '0.7rem', height: 22 }}
+                  />
+                )}
+                {responseRate > 0 && (
+                  <Chip
+                    label={`${responseRate}% Response Rate`}
+                    size="small"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.7rem',
+                      height: 22,
+                      bgcolor: 'success.50',
+                      color: 'success.dark',
+                      border: '1px solid',
+                      borderColor: 'success.light',
+                    }}
+                  />
+                )}
+                {rating > 0 && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                    <StarIcon sx={{ fontSize: 15, color: 'warning.main' }} />
+                    <Typography variant="caption" fontWeight={600}>
+                      {rating}
+                    </Typography>
+                    {ratingCount > 0 && (
+                      <Typography variant="caption" color="text.secondary">
+                        ({ratingCount} reviews)
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            </Box>
+
+            {/* CTA BUTTONS */}
             <Box
               sx={{
                 display: 'flex',
-                alignItems: 'center',
-                flexWrap: 'wrap',
                 gap: 1,
+                flexShrink: 0,
+                ml: 'auto',
               }}
             >
-              {trustSeal && (
-                <Chip
-                  label="TrustSEAL"
-                  size="small"
-                  sx={{
-                    bgcolor: theme.palette.secondary.main,
-                    color: theme.palette.secondary.contrastText,
-                    fontWeight: 'bold',
-                    height: 24,
-                  }}
-                />
-              )}
-
-              {gstNumber && (
-                <Chip
-                  label={`GST: ${gstNumber}`}
-                  size="small"
-                  sx={{ fontWeight: 'bold', height: 24 }}
-                />
-              )}
-
-              {yearsInBusiness && (
-                <Chip
-                  label={`${yearsInBusiness} yrs`}
-                  size="small"
-                  sx={{ fontWeight: 'bold', height: 24 }}
-                />
-              )}
-
-              {responseRate && (
-                <Chip
-                  label={`${responseRate}% Response rate`}
-                  size="small"
-                  sx={{
-                    fontWeight: 'bold',
-                    height: 24,
-                    color: theme.palette.success.main,
-                  }}
-                />
-              )}
-
-              {rating && (
-                <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{ color: theme.palette.warning.main, fontWeight: 'bold' }}
-                  >
-                    ★★★★★
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ color: theme.palette.text.secondary, ml: 0.5 }}
-                  >
-                    {rating} {ratingCount && `(${ratingCount})`}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-          </Grid>
-
-          {/* ===== ACTION BUTTONS ===== */}
-          <Grid item sx={{ minWidth: 200, textAlign: 'right' }}>
-            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
               {phone && (
                 <Button
                   variant="contained"
-                  sx={{
-                    fontWeight: 'bold',
-                    height: 32,
-                    px: 2,
-                    fontSize: 14,
-                  }}
+                  size="small"
+                  startIcon={<PhoneIcon sx={{ fontSize: '14px !important' }} />}
                   href={`tel:${phone}`}
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 13,
+                    px: 2,
+                    height: 36,
+                    borderRadius: 1.5,
+                    boxShadow: 'none',
+                    '&:hover': { boxShadow: 'none' },
+                  }}
                 >
-                  Mobile
+                  Call Now
                 </Button>
               )}
-
               {email && (
                 <Button
                   variant="outlined"
-                  color="secondary"
-                  sx={{
-                    fontWeight: 'bold',
-                    height: 32,
-                    px: 2,
-                    fontSize: 14,
-                  }}
+                  size="small"
+                  startIcon={<EmailIcon sx={{ fontSize: '14px !important' }} />}
                   href={`mailto:${email}`}
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 13,
+                    px: 2,
+                    height: 36,
+                    borderRadius: 1.5,
+                  }}
                 >
                   Email
                 </Button>
               )}
             </Box>
-          </Grid>
-        </Grid>
-      </Container>
-    </Paper>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* ── STICKY NAV TABS ── */}
+      <Box
+        sx={{
+          bgcolor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Container maxWidth="lg" disableGutters>
+          <Tabs
+            value={activeSection}
+            onChange={(_, v) => onNavClick(v)}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              minHeight: 44,
+              '& .MuiTab-root': {
+                minHeight: 44,
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                letterSpacing: 0.3,
+                textTransform: 'none',
+                color: 'text.secondary',
+                px: { xs: 2, md: 3 },
+                '&.Mui-selected': { color: 'primary.main' },
+              },
+              '& .MuiTabs-indicator': {
+                height: 3,
+                borderRadius: '3px 3px 0 0',
+              },
+            }}
+          >
+            {NAV_ITEMS.map((label) => (
+              <Tab key={label} label={label} disableRipple />
+            ))}
+          </Tabs>
+        </Container>
+      </Box>
+    </Box>
   )
 }

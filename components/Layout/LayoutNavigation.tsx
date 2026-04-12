@@ -120,6 +120,9 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
   const [searchExpanded, setSearchExpanded] = useState(false)
   const [activeMicroUid, setActiveMicroUid] = useState<string | null>(null)
   const [expandedMicroUid, setExpandedMicroUid] = useState<string | null>(null)
+  const [visibleCount, setVisibleCount] = useState(8)
+  const [allCategoriesOpen, setAllCategoriesOpen] = useState(false)
+  const menuBarRef = useRef<HTMLDivElement | null>(null)
 
   /* ================= STICKY HEADER ================= */
   const headerRef = useRef<HTMLDivElement | null>(null)
@@ -143,6 +146,25 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
 
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
+  }, [isMobile])
+
+  // Dynamically calculate how many short-label category items fit in the menu bar
+  useEffect(() => {
+    if (isMobile) return
+    const calculate = (width: number) => {
+      // "All Categories" btn ~160px + divider ~20px, each short label item ~110px avg
+      const available = width - 180
+      const count = Math.max(3, Math.floor(available / 110))
+      setVisibleCount(Math.min(count, 12))
+    }
+    if (menuBarRef.current) {
+      calculate(menuBarRef.current.offsetWidth)
+      const ro = new ResizeObserver((entries) => {
+        for (const e of entries) calculate(e.contentRect.width)
+      })
+      ro.observe(menuBarRef.current)
+      return () => ro.disconnect()
+    }
   }, [isMobile])
 
   // Location autocomplete states
@@ -272,6 +294,33 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
   )
 
   const subCategories = activeCategory?.children ?? []
+
+  // Short display labels for the menu bar.
+  // Keys should match your actual Magento category names exactly.
+  // Falls back to the first word of the category name if no match found.
+  const getMenuLabel = (name: string): string => {
+    if (!name) return ''
+    const labelMap: Record<string, string> = {
+      'Agriculture Produce & Farming Supplies': 'Agriculture & Farming',
+      'Construction Materials & Building Solutions': 'Construction & Building',
+      'Electrical & Electronic Appliances': 'Electrical Electronic& ',
+      'Gifting & Decorative Creations': 'Gifting & Decorative',
+      'Clothing & Lifestyle Wear': 'Clothing & Lifestyle',
+      'Health Care & Wellness': 'Health Care',
+      'Home Essentials & Utility Products': 'Home Essentials & Utility',
+      'Industrial Chemicals & Materials': 'Industrial Chemicals',
+      'Automotive & Vehicle Accessories': 'Automotive & Vehicle',
+      'Food & Beverages': 'Food & Bev',
+      'Sports & Fitness Equipment': 'Sports & Fitness',
+      'Office & Stationery Supplies': 'Office & Stationery',
+      'Beauty & Personal Care': 'Beauty',
+      'Electronics & Gadgets': 'Electronics',
+      'Furniture & Home Decor': 'Furniture & Home Decor',
+    }
+    if (labelMap[name]) return labelMap[name]
+    // Fallback: first word only — clean, no ellipsis
+    return name.trim().split(/\s+/)[0] ?? name
+  }
 
   // Search Bar Component (reusable for desktop and mobile)
   const SearchBar = ({ mobile = false, onExpand }: { mobile?: boolean; onExpand?: () => void }) => (
@@ -759,70 +808,153 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
                         : 'none',
                       borderBottom: '1px solid #e5e7eb',
                     }}
-                    onMouseLeave={handleMouseLeave}
+                    onMouseLeave={() => { handleMouseLeave(); setAllCategoriesOpen(false) }}
                   >
                     <Container maxWidth="xl">
                       <Box
+                        ref={menuBarRef}
                         sx={{
                           display: 'flex',
-                          justifyContent: 'center',
-                          gap: { md: 1.5, lg: 3 },
-                          px: { md: 2, lg: 3 },
-                          py: 0.8,
+                          alignItems: 'center',
+                          flexWrap: 'nowrap',
+                          gap: 0,
+                          px: { md: 1, lg: 2 },
+                          py: 0.4,
                         }}
                       >
-                        {menu?.items?.[0]?.children?.slice(0, 8).map((item) => (
-                          <Box
-                            key={item?.uid}
-                            onMouseEnter={() => handleMouseEnter(item?.uid)}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.3,
-                              fontSize: '13px',
-                              fontWeight: 600,
-                              color: '#374151',
-                              cursor: 'pointer',
-                              px: 1.2,
-                              py: 0.6,
-                              borderRadius: '6px',
-                              transition: 'all 0.2s',
-                              '&:hover': {
-                                bgcolor: '#eff6ff',
-                                color: '#1e40af',
-                              },
-                            }}
-                          >
-                            {item?.name}
-                            <IconSvg src={iconChevronDown} size="small" />
-                          </Box>
-                        ))}
-
+                        {/* ALL CATEGORIES BUTTON */}
                         <Box
-                          component="a"
-                          href="/blog"
+                          onMouseEnter={() => { setAllCategoriesOpen(true); setActiveUid(null) }}
                           sx={{
                             display: 'flex',
                             alignItems: 'center',
+                            gap: 0.6,
                             fontSize: '13px',
-                            fontWeight: 600,
-                            color: '#374151',
+                            fontWeight: 700,
+                            color: '#fff',
                             cursor: 'pointer',
-                            px: 1.2,
-                            py: 0.6,
+                            px: 1.5,
+                            py: 0.9,
+                            mr: 0.5,
                             borderRadius: '6px',
-                            textDecoration: 'none',
-                            transition: 'all 0.2s',
-                            '&:hover': {
-                              bgcolor: '#f3f4f6',
-                              color: '#1976d2',
-                            },
+                            bgcolor: '#1e40af',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                            transition: 'background 0.2s',
+                            '&:hover': { bgcolor: '#1e3a8a' },
                           }}
                         >
-                          <Trans id="Blog" />
+                          <MenuIcon sx={{ fontSize: 16 }} />
+                          All Categories
+                          <IconSvg src={iconChevronDown} size="small" sx={{ opacity: 0.8 }} />
                         </Box>
+
+                        {/* DIVIDER */}
+                        <Box sx={{ width: '1px', height: '22px', bgcolor: '#e5e7eb', mx: 1, flexShrink: 0 }} />
+
+                        {/* VISIBLE CATEGORIES — short labels, no ellipsis */}
+                        {menu?.items?.[0]?.children?.slice(0, visibleCount).map((item) => (
+                          <Box
+                            key={item?.uid}
+                            component="a"
+                            href={item?.url_path ? `/${item.url_path}` : '#'}
+                            onMouseEnter={() => { handleMouseEnter(item?.uid); setAllCategoriesOpen(false) }}
+                            onClick={(e: React.MouseEvent) => {
+                              if (item?.url_path) {
+                                e.preventDefault()
+                                setActiveUid(null)
+                                router.push(`/${item.url_path}`)
+                              }
+                            }}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.2,
+                              fontSize: { md: '12px', lg: '13px' },
+                              fontWeight: 600,
+                              color: '#374151',
+                              cursor: 'pointer',
+                              px: { md: 0.8, lg: 1.1, xl: 1.3 },
+                              py: 0.7,
+                              borderRadius: '6px',
+                              transition: 'all 0.15s',
+                              textDecoration: 'none',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
+                              '&:hover': { bgcolor: '#eff6ff', color: '#1e40af' },
+                            }}
+                          >
+                            {getMenuLabel(item?.name ?? '')}
+                            <IconSvg src={iconChevronDown} size="small" sx={{ flexShrink: 0, opacity: 0.6 }} />
+                          </Box>
+                        ))}
                       </Box>
                     </Container>
+
+                    {/* ALL CATEGORIES MEGA DROPDOWN */}
+                    {allCategoriesOpen && (
+                      <Box
+                        onMouseEnter={() => setAllCategoriesOpen(true)}
+                        onMouseLeave={() => setAllCategoriesOpen(false)}
+                        sx={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          bgcolor: '#fff',
+                          borderTop: '3px solid #1e40af',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.13)',
+                          zIndex: 1202,
+                        }}
+                      >
+                        <Container maxWidth="xl">
+                          <Box
+                            sx={{
+                              px: 3,
+                              py: 2.5,
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                              gap: 1,
+                            }}
+                          >
+                            {menu?.items?.[0]?.children?.map((item) => (
+                              <Box
+                                key={item?.uid}
+                                component="a"
+                                href={item?.url_path ? `/${item.url_path}` : '#'}
+                                onClick={(e: React.MouseEvent) => {
+                                  if (item?.url_path) {
+                                    e.preventDefault()
+                                    setAllCategoriesOpen(false)
+                                    router.push(`/${item.url_path}`)
+                                  }
+                                }}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                  px: 1.5,
+                                  py: 0.9,
+                                  borderRadius: '6px',
+                                  textDecoration: 'none',
+                                  transition: 'all 0.15s',
+                                  '&:hover': {
+                                    bgcolor: '#eff6ff',
+                                    color: '#1e40af',
+                                    pl: 2,
+                                  },
+                                }}
+                              >
+                                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#1e40af', flexShrink: 0, opacity: 0.5 }} />
+                                <Box sx={{ fontSize: '13px', fontWeight: 600, color: '#374151', '&:hover': { color: '#1e40af' } }}>
+                                  {item?.name}
+                                </Box>
+                              </Box>
+                            ))}
+                          </Box>
+                        </Container>
+                      </Box>
+                    )}
 
                     {/* SUB MENU */}
                     {subCategories.length > 0 && (
