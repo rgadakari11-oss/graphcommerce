@@ -12,7 +12,6 @@ import {
   Chip,
   Paper,
   InputBase,
-  Avatar,
 } from '@mui/material'
 import {
   Search as SearchIcon,
@@ -34,268 +33,57 @@ import type { LayoutNavigationProps } from '../components'
 import { LayoutDocument, LayoutNavigation } from '../components'
 import { graphqlSharedClient, graphqlSsrClient } from '../lib/graphql/graphqlSsrClient'
 import ProductsSection from './../components/ProductsSection'
-
+import { useRouter } from 'next/router'
+// ── Types ─────────────────────────────────────────────────────────────────────
 type Props = Record<string, unknown>
 type GetPageStaticProps = GetStaticProps<LayoutNavigationProps, Props>
 
-// ── All categories from JSON files ───────────────────────────────────────────
-const ALL_CATEGORIES = [
-  {
-    id: 'agriculture',
-    name: 'Agriculture Produce & Farming Supplies',
-    icon: '🌾',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/agriculture.svg',
-    trending: true,
-    tag: 'Trending',
-    color: '#16a34a',
-    bg: '#f0fdf4',
-    children: [
-      { name: 'Rice & Grain Varieties', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Rice-781.jpg' },
-      { name: 'Tea & Herbal Beverage Products', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Tea-27.jpg' },
-      { name: 'Irrigation & Water Management', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Irrigation-Systems-773.jpg' },
-      { name: 'Organic Vegetables & Fresh Produce', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Organic-Vegetables-1524.jpg' },
-      { name: 'Pulses & Lentil Products', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Pulses-780.jpg' },
-      { name: 'Tractor & Farm Equipment Parts', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Tractor-Parts-786.jpg' },
-    ],
-  },
-  {
-    id: 'construction',
-    name: 'Construction Materials & Building Solutions',
-    icon: '🏗️',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/construction-real-estate.svg',
-    trending: true,
-    tag: 'Top Seller',
-    color: '#b45309',
-    bg: '#fffbeb',
-    children: [
-      { name: 'Prebuilt & Modular Buildings', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Prefabricated-Portable-Buildings-1189.jpg' },
-      { name: 'Flooring & Wall Tile Solutions', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Tiles-249.jpg' },
-      { name: 'Portable Cabins & Site Offices', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Portable-Cabins-2261.jpg' },
-      { name: 'Bathroom Fixtures & Fittings', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Bathroom-Toilet-Accessories-Fittings-248.jpg' },
-      { name: 'Sanitary Fixtures & Plumbing', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Sanitaryware-1226.jpg' },
-      { name: 'Doors, Windows & Hardware', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Doors-Windows-Accessories-Fittings-1323.jpg' },
-    ],
-  },
-  {
-    id: 'electrical',
-    name: 'Electrical & Electronic Appliances',
-    icon: '⚡',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/electronics-electrical-supplies.svg',
-    trending: true,
-    tag: 'Hot',
-    color: '#d97706',
-    bg: '#fff7ed',
-    children: [
-      { name: 'Cooling & Air Conditioning', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Air-Conditioner-289.jpg' },
-      { name: 'Voltage Control & Stabilizers', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Voltage-Stabilizers-361.jpg' },
-      { name: 'Air Cooling & Ventilation', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Air-Cooler-1317.jpg' },
-      { name: 'Refrigeration & Freezing', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Refrigerator-Freezer-309.jpg' },
-      { name: 'Solar Energy Systems', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Solar-Products-Equipment-380.jpg' },
-      { name: 'LED Lighting & Illumination', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/LED-Products-1661.jpg' },
-    ],
-  },
-  {
-    id: 'machinery',
-    name: 'Machinery & Equipment',
-    icon: '⚙️',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/machinery.svg',
-    trending: true,
-    tag: 'New',
-    color: '#1d4ed8',
-    bg: '#eff6ff',
-    children: [
-      { name: 'Packaging & Sealing Machines', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Packaging-Machine-1084.jpg' },
-      { name: 'Construction Machinery', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Construction-Machinery-258.jpg' },
-      { name: 'Cutting & Shaping Machines', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Cutting-Machine-1621.jpg' },
-      { name: 'Food Processing Equipment', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Food-Processing-Machinery-409.jpg' },
-      { name: 'General Industrial Machines', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Industrial-Machinery-Parts-1014.jpg' },
-      { name: 'Agricultural Machinery', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Agricultural-Machines-Tools-11.jpg' },
-    ],
-  },
-  {
-    id: 'metals',
-    name: 'Metals, Minerals & Raw Materials',
-    icon: '🔩',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/mineral-metals.svg',
-    trending: false,
-    tag: '',
-    color: '#4b5563',
-    bg: '#f9fafb',
-    children: [
-      { name: 'Aluminum Materials & Components', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Aluminum-Aluminum-Products-1719.jpg' },
-      { name: 'Copper Materials & Products', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Copper-Products-1056.jpg' },
-      { name: 'Metal Forms, Alloys & Powders', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Metal-Products-Powder-1064.jpg' },
-      { name: 'Industrial Minerals & Refractory', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Minerals-Refractories-1065.jpg' },
-      { name: 'Steel & Stainless Steel', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Steel-Stainless-Steel-Products-Components-1194.jpg' },
-      { name: 'Iron Materials & Structural Steel', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Iron-Steel-539.jpg' },
-    ],
-  },
-  {
-    id: 'medical',
-    name: 'Medical Equipment & Healthcare Supplies',
-    icon: '🏥',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/hospital-medical-supplies.svg',
-    trending: true,
-    tag: 'In Demand',
-    color: '#0891b2',
-    bg: '#ecfeff',
-    children: [
-      { name: 'Protective Medical Gloves', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Disposable-Gloves-2342.jpg' },
-      { name: 'Patient Care Beds & Support', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Hospital-Beds-2344.jpg' },
-      { name: 'Clinical Equipment & Monitoring', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Medical-Equipment-462.jpg' },
-      { name: 'Diagnostic & Hospital Supplies', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Medical-Diagnostic-Hospital-Supplies-464.jpg' },
-      { name: 'Oxygen & Pulse Monitoring', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Pulse-Oximeters-2356.jpg' },
-      { name: 'Wound Care & Disposables', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Surgical-Dressings-Disposable-941.jpg' },
-    ],
-  },
-  {
-    id: 'packaging',
-    name: 'Packaging Materials & Paper Products',
-    icon: '📦',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/packaging-paper.svg',
-    trending: false,
-    tag: '',
-    color: '#7c3aed',
-    bg: '#f5f3ff',
-    children: [
-      { name: 'Adhesive & Sealing Tapes', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Adhesive-Tapes-1091.jpg' },
-      { name: 'Packaging Bottles & Containers', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Bottles-1224.jpg' },
-      { name: 'Packaging Boxes & Cartons', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Packaging-Boxes-1077.jpg' },
-      { name: 'Pallets, Crates & Storage', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Pallets-Crates-1231.jpg' },
-      { name: 'Paper Bags & Carry Solutions', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Paper-Bags-1079.jpg' },
-      { name: 'Flexible Packaging & Plastics', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Plastic-Packaging-Materials-1489.jpg' },
-    ],
-  },
-  {
-    id: 'piping',
-    name: 'Piping Systems & Fluid Transfer',
-    icon: '🔧',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/pipes-tubes-fittings.svg',
-    trending: false,
-    tag: '',
-    color: '#0369a1',
-    bg: '#f0f9ff',
-    children: [
-      { name: 'Pipes & Connection Fittings', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Pipes-Pipe-Fittings-269.jpg' },
-      { name: 'Tubes & Precision Fittings', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Tubes-Tube-Fittings-1050.jpg' },
-      { name: 'Brass Pipes & Tube Solutions', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Brass-Pipes-Tubes-2321.jpg' },
-      { name: 'Flange Systems & Mounting', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Flanges-1664.jpg' },
-      { name: 'Polymer Pipes & Flexible Tubing', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/PVC-Pipes-1033.jpg' },
-      { name: 'Rotary Joints & Flow Couplings', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Rotary-Unions-Joints-2478.jpg' },
-    ],
-  },
-  {
-    id: 'health',
-    name: 'Health Care & Wellness',
-    icon: '💊',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/health-beauty.svg',
-    trending: true,
-    tag: 'Popular',
-    color: '#dc2626',
-    bg: '#fff1f2',
-    children: [
-      { name: 'Daily Personal Hygiene', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Personal-Care-Products-466.jpg' },
-      { name: 'Health Supplements & Medicines', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Common-Medicines-Drugs-455.jpg' },
-      { name: 'Handwash & Bath Care', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Soap-Hand-Wash-195.jpg' },
-      { name: 'Beauty & Skin Care Essentials', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Cosmetics-191.jpg' },
-      { name: 'Herbal & Natural Wellness', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Ayurvedic-Medicines-Products-925.jpg' },
-      { name: 'Pain Relief & Recovery', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Pain-Relief-Drugs-Medicines-1546.jpg' },
-    ],
-  },
-  {
-    id: 'chemicals',
-    name: 'Industrial Chemicals & Materials',
-    icon: '🧪',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/chemicals.svg',
-    trending: false,
-    tag: '',
-    color: '#059669',
-    bg: '#ecfdf5',
-    children: [
-      { name: 'General Chemical Compounds', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Chemical-Supplies-830.jpg' },
-      { name: 'Agricultural Nutrients & Fertilizers', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Fertilizers-12.jpg' },
-      { name: 'Process & Industrial Chemicals', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Industrial-Chemicals-839.jpg' },
-      { name: 'Coatings, Paints & Treatments', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Paint-Allied-Products-222.jpg' },
-      { name: 'Rubber Materials & Components', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Rubber-Rubber-Products-227.jpg' },
-      { name: 'Colorants & Dyeing Solutions', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Dyes-1420.jpg' },
-    ],
-  },
-  {
-    id: 'industrial_equip',
-    name: 'Industrial Equipment & Utility Supplies',
-    icon: '🏭',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/industrial-supplies.svg',
-    trending: false,
-    tag: '',
-    color: '#374151',
-    bg: '#f3f4f6',
-    children: [
-      { name: 'Material Handling & Lifting', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Material-Handling-Equipment-524.jpg' },
-      { name: 'Conveyor Systems & Belts', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Conveyor-Conveyor-Industrial-Belts-512.jpg' },
-      { name: 'Hydraulic Systems & Power', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Hydraulic-Products-Equipment-1011.jpg' },
-      { name: 'Laboratory & Testing Instruments', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Laboratory-Glassware-Equipment-1245.jpg' },
-      { name: 'Storage & Warehouse Solutions', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Storage-Systems-1048.jpg' },
-      { name: 'Flow Control Valves', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Valves-532.jpg' },
-    ],
-  },
-  {
-    id: 'gifting',
-    name: 'Gifting & Decorative Creations',
-    icon: '🎁',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/gifts-crafts.svg',
-    trending: false,
-    tag: '',
-    color: '#be185d',
-    bg: '#fdf2f8',
-    children: [
-      { name: 'Handcrafted Art & Creative Items', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Handicrafts-916.jpg' },
-      { name: 'Home Décor & Styling Items', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Decorative-Items-1300.jpg' },
-      { name: 'Fragrance & Incense Products', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Incense-Agarbatti-437.jpg' },
-      { name: 'Spiritual Décor & Devotional', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Religious-Crafts-448.jpg' },
-      { name: 'Timepieces & Decorative Clocks', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Watches-Clocks-486.jpg' },
-      { name: 'Ritual & Pooja Essentials', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Pooja-Articles-Items-2555.jpg' },
-    ],
-  },
-  {
-    id: 'home',
-    name: 'Home Essentials & Utility Products',
-    icon: '🏠',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/home-supplies.svg',
-    trending: false,
-    tag: '',
-    color: '#0f766e',
-    bg: '#f0fdfa',
-    children: [
-      { name: 'Bags, Wallets & Carry Solutions', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Bags-Cases-1212.jpg' },
-      { name: 'Single-Use & Disposable Items', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Disposable-Products-1385.jpg' },
-      { name: 'Cleaning & Household Utility', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Housekeeping-Products-953.jpg' },
-      { name: 'Eco-Friendly Jute Carry Bags', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Jute-Bags-1564.jpg' },
-      { name: 'Kitchen Equipment & Storage', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Kitchen-Canteen-Accessories-Equipment-1241.jpg' },
-      { name: 'Kitchen Tools & Dining Essentials', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Kitchenware-497.jpg' },
-    ],
-  },
-  {
-    id: 'clothing',
-    name: 'Clothing & Lifestyle Wear',
-    icon: '👕',
-    image: 'https://tiimg.tistatic.com/new_website1/ti-revamp/icons/apparel-fashion.svg',
-    trending: true,
-    tag: 'Seasonal',
-    color: '#6d28d9',
-    bg: '#f5f3ff',
-    children: [
-      { name: 'Hair Extensions & Styling', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Human-Hair-Accessories-772.jpg' },
-      { name: 'Casual & Everyday T-Shirts', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/T-Shirts-61.jpg' },
-      { name: 'Ethnic Tunics & Kurta Styles', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Kurtis-2304.jpg' },
-      { name: 'Denim Wear & Jeans Collection', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Jeans-42.jpg' },
-      { name: 'Traditional Saree Collection', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Sarees-800.jpg' },
-      { name: 'Athletic & Performance Footwear', img: 'https://tiimg.tistatic.com/categoryimg/v1/1/Sport-Shoes-1454.jpg' },
-    ],
-  },
-]
+// Derived from the Magento menu GraphQL shape
+type MenuCategory = {
+  uid?: string | null
+  name?: string | null
+  url_path?: string | null
+  image?: string | null
+  children?: Array<{
+    uid?: string | null
+    name?: string | null
+    url_path?: string | null
+    children?: Array<{
+      uid?: string | null
+      name?: string | null
+      url_path?: string | null
+    } | null> | null
+  } | null> | null
+}
 
-const TRENDING_CATS = ALL_CATEGORIES.filter((c) => c.trending)
+// ── Category icon map (keyed by uid or partial name match) ───────────────────
+// Extend this map as your Magento categories grow.
+const CATEGORY_ICONS: Record<string, string> = {
+  agriculture: '🌾',
+  construction: '🏗️',
+  electrical: '⚡',
+  machinery: '⚙️',
+  metals: '🔩',
+  medical: '🏥',
+  packaging: '📦',
+  piping: '🔧',
+  health: '💊',
+  chemicals: '🧪',
+  industrial: '🏭',
+  gifting: '🎁',
+  home: '🏠',
+  clothing: '👕',
+}
 
+function getCategoryIcon(name: string): string {
+  const lower = (name ?? '').toLowerCase()
+  for (const [key, icon] of Object.entries(CATEGORY_ICONS)) {
+    if (lower.includes(key)) return icon
+  }
+  return '📁'
+}
+
+// ── Stats & Benefits (static content, unchanged) ─────────────────────────────
 const STATS = [
   { icon: <StoreIcon sx={{ fontSize: 28 }} />, value: '500+', label: 'Verified Suppliers' },
   { icon: <ProductIcon sx={{ fontSize: 28 }} />, value: '50K+', label: 'Products Listed' },
@@ -309,16 +97,30 @@ const BENEFITS = [
   { icon: <ShippingIcon sx={{ fontSize: 36 }} />, title: 'Logistics Support', desc: 'End-to-end freight solutions — from factory to your doorstep.' },
   { icon: <AwardIcon sx={{ fontSize: 36 }} />, title: 'Quality Assured', desc: 'Product samples, inspection reports and buyer protection on every order.' },
 ]
+
 // ── Sub-component: Category Card ─────────────────────────────────────────────
-function CategoryCard({ cat, variant = 'default',
+function CategoryCard({
+  cat,
+  variant = 'default',
+  label
 }: {
-  cat: typeof ALL_CATEGORIES[0]
+  cat: MenuCategory
   variant?: 'default' | 'compact'
+  label?: string
 }) {
   const [hovered, setHovered] = useState(false)
+  const icon = getCategoryIcon(cat.name ?? '')
+  const subCategories = cat.children?.filter(Boolean) ?? []
+  const imageUrl = cat.image?.startsWith('http')
+    ? cat.image
+    : cat.image
+      ? `${process.env.NEXT_PUBLIC_MAGENTO_ENDPOINT}${cat.image}`
+      : null
 
   return (
     <Box
+      component="a"
+      href={cat.url_path ? `/${cat.url_path}` : '#'}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       sx={{
@@ -332,65 +134,82 @@ function CategoryCard({ cat, variant = 'default',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        textDecoration: 'none',
       }}
     >
-      {/* ── Hero image with overlay ── */}
-      {variant !== 'compact' && (
-        <Box sx={{ position: 'relative', height: 160, overflow: 'hidden', bgcolor: '#f3f4f6' }}>
-          <Box
-            component="img"
-            src={cat.children[0]?.img}
-            alt={cat.name}
-            onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-              e.currentTarget.src = cat.image
-              e.currentTarget.style.objectFit = 'contain'
-              e.currentTarget.style.padding = '20px'
-            }}
-            sx={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              display: 'block',
-              transition: 'transform 0.32s ease',
-              transform: hovered ? 'scale(1.05)' : 'scale(1)',
-            }}
-          />
+      {/* 🔥 NEW: IMAGE BLOCK */}
+      {imageUrl ? variant !== 'compact' && (
+        <Box sx={{ position: 'relative' }}>
+          {/* IMAGE */}
           <Box
             sx={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(to top, rgba(0,0,0,.52) 0%, transparent 55%)',
+              height: 120,
+              backgroundImage: `url(${imageUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
             }}
           />
 
-          {/* Tag badge */}
-          {cat.tag && (
+          {/* 🔥 LABEL BADGE */}
+          {label && (
             <Box
               sx={{
                 position: 'absolute',
-                top: 10,
-                right: 10,
-                bgcolor: '#1159b4',
-                color: '#fff',
+                top: 8,
+                right: 8,
+                px: 1.2,
+                py: '3px',
                 fontSize: '0.65rem',
                 fontWeight: 700,
-                borderRadius: '100px',
-                px: '9px',
+                borderRadius: '6px',
+                color: '#fff',
+
+                // optional: dynamic colors
+                background: '#1159b4',
+              }}
+            >
+              {label}
+            </Box>
+          )}
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            height: 120,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 32,
+            bgcolor: '#f1f5f9',
+            position: 'relative',
+          }}
+        >
+          {icon}
+
+          {/* fallback label also works */}
+          {label && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 8,
+                left: 8,
+                px: 1.2,
                 py: '3px',
-                letterSpacing: '0.02em',
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                color: '#fff',
+                backgroundColor: '#173562',
                 fontFamily: '"DM Sans", sans-serif',
               }}
             >
-              {cat.tag}
+              {label}
             </Box>
           )}
         </Box>
       )}
-
       {/* ── Card body ── */}
-
       <Box sx={{ p: '14px 16px 10px', flex: 1 }}>
-        {/* Category name */}
         <Typography
           sx={{
             fontFamily: '"DM Sans", sans-serif',
@@ -401,15 +220,14 @@ function CategoryCard({ cat, variant = 'default',
             mb: 1.5,
           }}
         >
-          {cat.icon} {cat.name}
+          {icon} {cat.name}
         </Typography>
 
-        {/* Sub-category rows */}
-        {variant !== 'compact' && (
+        {variant !== 'compact' && subCategories.length > 0 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {cat.children.slice(0, 4).map((sub, i, arr) => (
+            {subCategories.slice(0, 4).map((sub, i, arr) => (
               <Box
-                key={i}
+                key={sub?.uid ?? i}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -425,12 +243,12 @@ function CategoryCard({ cat, variant = 'default',
                   sx={{
                     fontSize: '0.75rem',
                     fontWeight: 500,
-                    color: 'inherit',
+                    color: 'black',
                     fontFamily: '"DM Sans", sans-serif',
                     lineHeight: 1.3,
                   }}
                 >
-                  {sub.name}
+                  {sub?.name}
                 </Typography>
                 <ChevronIcon sx={{ fontSize: 14, opacity: 0.45, flexShrink: 0, ml: 0.5 }} />
               </Box>
@@ -438,7 +256,6 @@ function CategoryCard({ cat, variant = 'default',
           </Box>
         )}
       </Box>
-
 
       {/* ── Card footer ── */}
       {variant !== 'compact' && (
@@ -448,13 +265,9 @@ function CategoryCard({ cat, variant = 'default',
             py: 1.5,
             borderTop: '1px solid #f1f5f9',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
           }}
         >
-          <Typography sx={{ fontSize: '0.72rem', color: '#9ca3af', fontFamily: '"DM Sans", sans-serif' }}>
-            {cat.children.length} sub-categories
-          </Typography>
           <Box
             sx={{
               display: 'flex',
@@ -475,9 +288,18 @@ function CategoryCard({ cat, variant = 'default',
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-function IndexPage() {
+function IndexPage(props: LayoutNavigationProps) {
   const [searchVal, setSearchVal] = useState('')
+  const router = useRouter()
 
+  // Pull categories from the same GraphQL data the nav uses
+  const allCategories: MenuCategory[] =
+    (props.menu?.items?.[0]?.children?.filter(Boolean) as MenuCategory[]) ?? []
+
+  // "Trending" = first 4 categories (or adapt this logic to a tag/attribute if your
+  // Magento setup exposes one, e.g. cat.is_trending or similar)
+  const trendingCategories = allCategories.slice(0, 4)
+  const LABELS = ['Trending', 'Top Seller', 'Hot', 'New']
   return (
     <>
       <PageMeta
@@ -571,7 +393,7 @@ function IndexPage() {
                   fontFamily: '"DM Sans", sans-serif',
                 }}
               >
-                Connect with verified suppliers across 14 industries. Post requirements, receive
+                Connect with verified suppliers across {allCategories.length || 14} industries. Post requirements, receive
                 competitive bulk quotes, and grow your procurement network.
               </Typography>
 
@@ -594,6 +416,11 @@ function IndexPage() {
                   placeholder="Search products, categories, suppliers…"
                   value={searchVal}
                   onChange={(e) => setSearchVal(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchVal.trim()) {
+                      router.push(`/search/${encodeURIComponent(searchVal.trim())}`)
+                    }
+                  }}
                   sx={{
                     flex: 1,
                     fontFamily: '"DM Sans", sans-serif',
@@ -618,26 +445,25 @@ function IndexPage() {
                 </Button>
               </Box>
 
+              {/* Quick-search chips — first 5 top-level category names */}
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {['Steel Pipes', 'LED Lights', 'Rice (Basmati)', 'Solar Panels', 'PPE Kits'].map(
-                  (q) => (
-                    <Chip
-                      key={q}
-                      label={q}
-                      size="small"
-                      onClick={() => setSearchVal(q)}
-                      sx={{
-                        bgcolor: 'rgba(255,255,255,.1)',
-                        color: 'rgba(255,255,255,.85)',
-                        border: '1px solid rgba(255,255,255,.2)',
-                        fontFamily: '"DM Sans", sans-serif',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,.18)' },
-                      }}
-                    />
-                  ),
-                )}
+                {allCategories.slice(0, 5).map((cat) => (
+                  <Chip
+                    key={cat.uid}
+                    label={cat.name}
+                    size="small"
+                    onClick={() => setSearchVal(cat.name ?? '')}
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,.1)',
+                      color: 'rgba(255,255,255,.85)',
+                      border: '1px solid rgba(255,255,255,.2)',
+                      fontFamily: '"DM Sans", sans-serif',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,.18)' },
+                    }}
+                  />
+                ))}
               </Box>
             </Grid>
 
@@ -758,84 +584,84 @@ function IndexPage() {
         </Container>
       </Box>
 
-      {/* ── TRENDING CATEGORIES ─────────────────────────────────────────────── */}
-      <Box sx={{ bgcolor: '#fafafa', py: { xs: 2, md: 2 } }}>
-        <Container maxWidth="lg">
-
-          {/* Section header */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'space-between',
-              mb: 3,
-              flexWrap: 'wrap',
-              gap: 1.5,
-            }}
-          >
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                <TrendingIcon sx={{ color: '#1159b4', fontSize: 20 }} />
+      {/* ── TRENDING / MOST ACTIVE CATEGORIES ─────────────────────────────── */}
+      {trendingCategories.length > 0 && (
+        <Box sx={{ bgcolor: '#fafafa', py: { xs: 2, md: 2 } }}>
+          <Container maxWidth="lg">
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'space-between',
+                mb: 3,
+                flexWrap: 'wrap',
+                gap: 1.5,
+              }}
+            >
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <TrendingIcon sx={{ color: '#1159b4', fontSize: 20 }} />
+                  <Typography
+                    sx={{
+                      fontFamily: '"DM Sans", sans-serif',
+                      fontWeight: 800,
+                      color: '#1159b4',
+                      fontSize: '0.78rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
+                    Trending Now
+                  </Typography>
+                </Box>
                 <Typography
+                  variant="h4"
                   sx={{
                     fontFamily: '"DM Sans", sans-serif',
                     fontWeight: 800,
-                    color: '#1159b4',
-                    fontSize: '0.78rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
+                    color: '#0f172a',
+                    fontSize: { xs: '1.5rem', md: '1.9rem' },
+                    letterSpacing: '-0.02em',
                   }}
                 >
-                  Trending Now
+                  Most Active Categories
                 </Typography>
               </Box>
-              <Typography
-                variant="h4"
+
+              <Button
+                variant="contained"
+                component="a"
+                href="/allcategories"
+                endIcon={<ArrowIcon />}
                 sx={{
+                  background: '#f8f9fa',
+                  textTransform: 'none',
                   fontFamily: '"DM Sans", sans-serif',
-                  fontWeight: 800,
-                  color: '#0f172a',
-                  fontSize: { xs: '1.5rem', md: '1.9rem' },
-                  letterSpacing: '-0.02em',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  borderRadius: '9px',
+                  px: 2.5,
+                  py: 1,
+                  boxShadow: 'none',
+                  '&:hover': { background: '#f8f9fa', boxShadow: 'none' },
                 }}
               >
-                Most Active Categories
-              </Typography>
+                View All Categories
+              </Button>
             </Box>
 
-            {/* View All button — always visible */}
-            <Button
-              variant="contained"
-              endIcon={<ArrowIcon />}
-              sx={{
-                background: '#f8f9fa',
-                textTransform: 'none',
-                fontFamily: '"DM Sans", sans-serif',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                borderRadius: '9px',
-                px: 2.5,
-                py: 1,
-                boxShadow: 'none',
-                '&:hover': { background: '#f8f9fa', boxShadow: 'none' },
-              }}
-            >
-              View All Categories
-            </Button>
-          </Box>
+            <Grid container spacing={2.5}>
+              {trendingCategories.map((cat, index) => (
+                <Grid item xs={12} sm={6} md={3} key={cat.uid}>
+                  <CategoryCard cat={cat} variant='default' label={LABELS[index]} />
+                </Grid>
+              ))}
+            </Grid>
+          </Container>
+        </Box>
+      )}
 
-          {/* Only show first 4 trending categories */}
-          <Grid container spacing={2.5}>
-            {TRENDING_CATS.slice(0, 4).map((cat) => (
-              <Grid item xs={12} sm={6} md={3} key={cat.id}>
-                <CategoryCard cat={cat} />
-              </Grid>
-            ))}
-          </Grid>
-
-        </Container>
-      </Box>
-      <ProductsSection group={1} />
+      <ProductsSection categoryIds={[246, 283, 320]} />
 
       {/* ── Bottom CTA ── */}
       <Box sx={{
@@ -871,48 +697,51 @@ function IndexPage() {
           </Box>
         </Box>
       </Box>
-      <ProductsSection group={2} />
+
+      <ProductsSection categoryIds={[357, 431, 504]} />
 
       {/* ── ALL CATEGORIES ──────────────────────────────────────────────────── */}
-      <Box sx={{ bgcolor: '#fff', py: { xs: 5, md: 7 } }}>
-        <Container maxWidth="lg">
-          <Box sx={{ mb: 4 }}>
-            <Typography
-              sx={{
-                fontFamily: '"DM Sans", sans-serif',
-                fontWeight: 800,
-                color: '#1159b4',
-                fontSize: '0.82rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                mb: 0.5,
-              }}
-            >
-              Browse by Industry
-            </Typography>
-            <Typography
-              variant="h4"
-              sx={{
-                fontFamily: '"DM Sans", sans-serif',
-                fontWeight: 800,
-                color: '#0f172a',
-                fontSize: { xs: '1.5rem', md: '1.9rem' },
-                letterSpacing: '-0.02em',
-              }}
-            >
-              All Product Categories
-            </Typography>
-          </Box>
+      {allCategories.length > 0 && (
+        <Box sx={{ bgcolor: '#fff', py: { xs: 5, md: 7 } }}>
+          <Container maxWidth="lg">
+            <Box sx={{ mb: 4 }}>
+              <Typography
+                sx={{
+                  fontFamily: '"DM Sans", sans-serif',
+                  fontWeight: 800,
+                  color: '#1159b4',
+                  fontSize: '0.82rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  mb: 0.5,
+                }}
+              >
+                Browse by Industry
+              </Typography>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontFamily: '"DM Sans", sans-serif',
+                  fontWeight: 800,
+                  color: '#0f172a',
+                  fontSize: { xs: '1.5rem', md: '1.9rem' },
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                All Product Categories
+              </Typography>
+            </Box>
 
-          <Grid container spacing={2.5}>
-            {ALL_CATEGORIES.map((cat) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={cat.id}>
-                <CategoryCard cat={cat} variant="compact" />
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
+            <Grid container spacing={2.5}>
+              {allCategories.map((cat) => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={cat.uid}>
+                  <CategoryCard cat={cat} variant="compact" />
+                </Grid>
+              ))}
+            </Grid>
+          </Container>
+        </Box>
+      )}
 
       {/* ── WHY QTYBID ──────────────────────────────────────────────────────── */}
       <Box sx={{ bgcolor: '#f8fafc', py: { xs: 6, md: 8 } }}>
@@ -1081,9 +910,7 @@ function IndexPage() {
               Post a Requirement
             </Button>
           </Box>
-          <Box
-            sx={{ display: 'flex', gap: 4, justifyContent: 'center', flexWrap: 'wrap' }}
-          >
+          <Box sx={{ display: 'flex', gap: 4, justifyContent: 'center', flexWrap: 'wrap' }}>
             {['Free Registration', 'No Hidden Fees', '24/7 Support', 'Zero Commission on 1st 100 Orders'].map(
               (t) => (
                 <Box key={t} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
