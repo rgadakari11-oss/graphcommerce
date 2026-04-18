@@ -382,12 +382,12 @@ export default function ProductsSection({ categoryIds, pageSize = 6, title }: Pr
         <Grid container spacing={2}>
           {loading && categories.length === 0
             ? Array.from({ length: pageSize }).map((_, i) => (
-              <Grid item xs={12} sm={6} md={4} lg={2} key={i}>
+              <Grid item xs={6} sm={6} md={4} lg={2} key={i}>
                 <SkeletonCard />
               </Grid>
             ))
             : activeCat?.products.map((product) => (
-              <Grid item xs={12} sm={6} md={4} lg={2} key={product.url_key}>
+              <Grid item xs={6} sm={6} md={4} lg={2} key={product.url_key}>
                 <ProductCard
                   product={product}
                 />

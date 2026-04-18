@@ -92,7 +92,7 @@ const STATS = [
 ]
 
 const BENEFITS = [
-  { icon: <VerifiedIcon sx={{ fontSize: 36 }} />, title: 'Verified Network', desc: 'Every supplier is KYC-verified before listing on our platform.' },
+  { icon: <VerifiedIcon sx={{ fontSize: 36 }} />, title: 'Verified Network', desc: 'Every supplier is verified before listing on our platform.' },
   { icon: <QuoteIcon sx={{ fontSize: 36 }} />, title: 'Instant Quotes', desc: 'Post your requirement and receive competitive bulk quotes within hours.' },
   { icon: <ShippingIcon sx={{ fontSize: 36 }} />, title: 'Logistics Support', desc: 'End-to-end freight solutions — from factory to your doorstep.' },
   { icon: <AwardIcon sx={{ fontSize: 36 }} />, title: 'Quality Assured', desc: 'Product samples, inspection reports and buyer protection on every order.' },
@@ -308,16 +308,16 @@ function IndexPage(props: LayoutNavigationProps) {
       />
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Box
         sx={{
           background: 'linear-gradient(118deg, #0c1e3c 0%, #1a3a6b 55%, #14527a 100%)',
           position: 'relative',
           overflow: 'hidden',
-          pt: { xs: 6, md: 9 },
-          pb: { xs: 5, md: 7 },
+          pt: { xs: 3, md: 4 },
+          pb: { xs: 3, md: 4 },
         }}
       >
-        {/* Decorative circles */}
         {[
           { size: 500, top: -180, right: -120, opacity: 0.06 },
           { size: 300, top: 40, right: 220, opacity: 0.04 },
@@ -344,7 +344,6 @@ function IndexPage(props: LayoutNavigationProps) {
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={7}>
-              {/* Eyebrow */}
               <Chip
                 label="🇮🇳  Made in India · For Indian Businesses"
                 size="small"
@@ -353,7 +352,7 @@ function IndexPage(props: LayoutNavigationProps) {
                   color: 'rgba(255,255,255,.9)',
                   fontWeight: 600,
                   fontSize: '0.72rem',
-                  mb: 2.5,
+                  mb: 1.5,
                   border: '1px solid rgba(255,255,255,.2)',
                   backdropFilter: 'blur(4px)',
                 }}
@@ -366,7 +365,7 @@ function IndexPage(props: LayoutNavigationProps) {
                   fontSize: { xs: '2.2rem', md: '3.2rem' },
                   color: '#fff',
                   lineHeight: 1.15,
-                  mb: 2,
+                  mb: 1.5,
                   letterSpacing: '-0.02em',
                 }}
               >
@@ -387,7 +386,7 @@ function IndexPage(props: LayoutNavigationProps) {
                 sx={{
                   color: 'rgba(255,255,255,.75)',
                   fontSize: { xs: '1rem', md: '1.1rem' },
-                  mb: 4,
+                  mb: 2.5,
                   maxWidth: 560,
                   lineHeight: 1.65,
                   fontFamily: '"DM Sans", sans-serif',
@@ -397,7 +396,6 @@ function IndexPage(props: LayoutNavigationProps) {
                 competitive bulk quotes, and grow your procurement network.
               </Typography>
 
-              {/* Search bar */}
               <Box
                 sx={{
                   display: 'flex',
@@ -406,7 +404,7 @@ function IndexPage(props: LayoutNavigationProps) {
                   overflow: 'hidden',
                   boxShadow: '0 8px 32px rgba(0,0,0,.25)',
                   maxWidth: 580,
-                  mb: 3,
+                  mb: 2,
                 }}
               >
                 <Box sx={{ px: 2, display: 'flex', alignItems: 'center', color: '#9ca3af' }}>
@@ -445,7 +443,6 @@ function IndexPage(props: LayoutNavigationProps) {
                 </Button>
               </Box>
 
-              {/* Quick-search chips — first 5 top-level category names */}
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {allCategories.slice(0, 5).map((cat) => (
                   <Chip
@@ -467,8 +464,7 @@ function IndexPage(props: LayoutNavigationProps) {
               </Box>
             </Grid>
 
-            {/* Stats card */}
-            <Grid item xs={12} md={5}>
+            <Grid item xs={12} md={5} sx={{ display: { xs: 'none', md: 'block' } }}>
               <Paper
                 elevation={0}
                 sx={{
@@ -479,53 +475,121 @@ function IndexPage(props: LayoutNavigationProps) {
                   backdropFilter: 'blur(16px)',
                 }}
               >
-                <Box sx={{ px: 3, pt: 2.5, pb: 1 }}>
+                <Box sx={{ px: 3, pt: 2, pb: 1 }}>
                   <Typography
                     sx={{
                       fontFamily: '"DM Sans", sans-serif',
                       fontWeight: 700,
                       color: '#fff',
                       fontSize: '1rem',
-                      mb: 0.5,
+                      mb: 0.4,
                     }}
                   >
-                    🚀 Platform at a Glance
+                    ⚡ Seamless Procurement Flow
                   </Typography>
-                  <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: '0.8rem' }}>
-                    Growing every day
+                  <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: '0.78rem' }}>
+                    From requirement to delivery — simplified
                   </Typography>
                 </Box>
-                <Grid container>
-                  {STATS.map((s, i) => (
-                    <Grid item xs={6} key={i}>
-                      <Box
-                        sx={{
-                          px: 3,
-                          py: 2.5,
-                          borderTop: i >= 2 ? '1px solid rgba(255,255,255,.08)' : 'none',
-                          borderLeft: i % 2 === 1 ? '1px solid rgba(255,255,255,.08)' : 'none',
-                        }}
-                      >
-                        <Box sx={{ color: '#fbbf24', mb: 0.5 }}>{s.icon}</Box>
+
+                <Box sx={{ px: 2.5, pb: 0 }}>
+                  {[
+                    {
+                      step: '01',
+                      icon: '🧾',
+                      title: 'Multi-Seller Quotes',
+                      sub: 'Add products and receive competitive offers from verified sellers.',
+                    },
+                    {
+                      step: '02',
+                      icon: '💰',
+                      title: 'Customized Pricing',
+                      sub: 'Tailored quotes based on your bulk volume and requirements.',
+                    },
+                    {
+                      step: '03',
+                      icon: '🤝',
+                      title: 'Direct Negotiations',
+                      sub: 'Message sellers to finalize terms, shipping, and lead times.',
+                    },
+                    {
+                      step: '04',
+                      icon: '🛟',
+                      title: '24/7 Trade Support',
+                      sub: 'Our team assists you from inquiry to final delivery.',
+                    },
+                  ].map((item, i, arr) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1.5,
+                        py: 1,
+                        borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.07)' : 'none',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                        <Box
+                          sx={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: '7px',
+                            bgcolor: i === 0 ? '#f97316' : 'rgba(255,255,255,.1)',
+                            border: `1.5px solid ${i === 0 ? '#f97316' : 'rgba(255,255,255,.2)'}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.62rem',
+                            fontWeight: 800,
+                            color: '#fff',
+                            fontFamily: '"DM Sans", sans-serif',
+                          }}
+                        >
+                          {item.step}
+                        </Box>
+                        {i < arr.length - 1 && (
+                          <Box
+                            sx={{
+                              width: '1px',
+                              height: 12,
+                              background: 'linear-gradient(to bottom, rgba(249,115,22,.4), rgba(255,255,255,.06))',
+                              mt: '2px',
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.3 }}>
+                          <span style={{ fontSize: '0.88rem' }}>{item.icon}</span>
+                          <Typography
+                            sx={{
+                              fontFamily: '"DM Sans", sans-serif',
+                              fontWeight: 700,
+                              fontSize: '0.84rem',
+                              color: '#fff',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {item.title}
+                          </Typography>
+                        </Box>
                         <Typography
                           sx={{
                             fontFamily: '"DM Sans", sans-serif',
-                            fontWeight: 800,
-                            fontSize: '1.6rem',
-                            color: '#fff',
-                            lineHeight: 1,
+                            fontSize: '0.73rem',
+                            color: 'rgba(255,255,255,.5)',
+                            lineHeight: 1.45,
                           }}
                         >
-                          {s.value}
-                        </Typography>
-                        <Typography sx={{ color: 'rgba(255,255,255,.55)', fontSize: '0.8rem', mt: 0.3 }}>
-                          {s.label}
+                          {item.sub}
                         </Typography>
                       </Box>
-                    </Grid>
+                    </Box>
                   ))}
-                </Grid>
-                <Box sx={{ px: 3, pb: 2.5, pt: 1 }}>
+                </Box>
+
+                <Box sx={{ px: 3, pb: 2, pt: 1 }}>
                   <Button
                     fullWidth
                     variant="contained"
@@ -540,7 +604,7 @@ function IndexPage(props: LayoutNavigationProps) {
                       '&:hover': { background: 'linear-gradient(90deg, #ea580c, #c2410c)' },
                     }}
                   >
-                    Register as Supplier — Free
+                    Register — Free
                   </Button>
                 </Box>
               </Paper>
@@ -563,7 +627,7 @@ function IndexPage(props: LayoutNavigationProps) {
           >
             {[
               '✅ Zero Commission on First 100 Orders',
-              '🔒 KYC-Verified Suppliers',
+              '🔒 Verified Suppliers',
               '💬 24/7 Trade Desk',
               '🆓 Free Registration',
             ].map((t) => (
@@ -675,7 +739,7 @@ function IndexPage(props: LayoutNavigationProps) {
             Can't find what you need?
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,.55)', fontSize: '0.8rem', mt: 0.3, fontFamily: '"DM Sans", sans-serif' }}>
-            Post a requirement and receive bulk quotes from 500+ verified suppliers
+            Post a requirement and receive bulk quotes from verified suppliers
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -858,16 +922,7 @@ function IndexPage(props: LayoutNavigationProps) {
           >
             Ready to Grow Your Business?
           </Typography>
-          <Typography
-            sx={{
-              color: 'rgba(255,255,255,.7)',
-              mb: 4,
-              fontSize: '1.05rem',
-              fontFamily: '"DM Sans", sans-serif',
-            }}
-          >
-            Join QTYBID and get premium features free for 6 months
-          </Typography>
+
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap', mb: 4 }}>
             <Button
               variant="contained"
@@ -911,7 +966,7 @@ function IndexPage(props: LayoutNavigationProps) {
             </Button>
           </Box>
           <Box sx={{ display: 'flex', gap: 4, justifyContent: 'center', flexWrap: 'wrap' }}>
-            {['Free Registration', 'No Hidden Fees', '24/7 Support', 'Zero Commission on 1st 100 Orders'].map(
+            {['Free Registration', 'No Hidden Fees', '24/7 Support', 'Zero Commission'].map(
               (t) => (
                 <Box key={t} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <CheckIcon sx={{ color: '#4ade80', fontSize: 18 }} />

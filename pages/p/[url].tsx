@@ -641,41 +641,34 @@ function ProductPage(props: Props) {
                   sellerId={sellerId}
                 />
 
-                {/* ── Packaging & Delivery ── */}
+                {/* ── Why Buy on QtyBiz ── */}
                 <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, p: 2, backgroundColor: 'background.paper' }}>
                   <Typography sx={{ fontWeight: 700, fontSize: '13.5px', mb: 1.5, color: 'text.primary' }}>
-                    Packaging & Delivery
+                    Why Buy on QtyBiz
                   </Typography>
                   {[
-                    { icon: '📦', label: 'Min. Order', value: '50 Units' },
-                    { icon: '🚚', label: 'Delivery Time', value: '7–10 Business Days' },
-                    { icon: '🌍', label: 'Supply Ability', value: '1000 Units / Month' },
-                    { icon: '🏷️', label: 'Port', value: 'Mumbai, India' },
+                    { icon: '✅', label: 'GST Verified Sellers', value: 'Trusted & Authenticated' },
+                    { icon: '🏭', label: 'Direct from Manufacturer', value: 'No Middlemen' },
+                    { icon: '💬', label: 'Genuine Trade Leads', value: 'Verified Buyers & Sellers' },
+                    { icon: '🚀', label: 'Best Price Guarantee', value: 'Competitive B2B Pricing' },
+                    { icon: '🌍', label: 'Pan-India Network', value: '30+ Cities Covered' },
                   ].map(({ icon, label, value }) => (
-                    <Box key={label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.6, borderBottom: '1px solid', borderColor: 'divider', '&:last-child': { borderBottom: 'none', pb: 0 } }}>
+                    <Box
+                      key={label}
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        py: 0.6,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        '&:last-child': { borderBottom: 'none', pb: 0 },
+                      }}
+                    >
                       <Typography sx={{ fontSize: '12px', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         <span>{icon}</span>{label}
                       </Typography>
-                      <Typography sx={{ fontSize: '12px', fontWeight: 600, color: 'text.primary' }}>{value}</Typography>
-                    </Box>
-                  ))}
-                </Box>
 
-                {/* ── Payment & Trade ── */}
-                <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, p: 2, backgroundColor: 'background.paper' }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: '13.5px', mb: 1.5, color: 'text.primary' }}>
-                    Payment & Trade
-                  </Typography>
-                  {[
-                    { icon: '💳', label: 'Payment Terms', value: 'T/T, L/C, PayPal' },
-                    { icon: '🔒', label: 'Trade Assurance', value: 'Secured' },
-                    { icon: '📋', label: 'Accepted Currency', value: 'INR, USD' },
-                  ].map(({ icon, label, value }) => (
-                    <Box key={label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.6, borderBottom: '1px solid', borderColor: 'divider', '&:last-child': { borderBottom: 'none', pb: 0 } }}>
-                      <Typography sx={{ fontSize: '12px', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <span>{icon}</span>{label}
-                      </Typography>
-                      <Typography sx={{ fontSize: '12px', fontWeight: 600, color: 'text.primary' }}>{value}</Typography>
                     </Box>
                   ))}
                 </Box>
@@ -691,8 +684,10 @@ function ProductPage(props: Props) {
 
 
 
-        <Box sx={(theme) => ({ width: '100%', display: 'flex', justifyContent: 'left' })}>
-          <Box sx={{ width: { xs: '100%', md: '75%' } }}>
+        <Box sx={{ width: '100%', display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+
+          {/* LEFT: 75% — existing content */}
+          <Box sx={{ width: { xs: '100%', md: '75%' }, flexShrink: 0 }}>
             {sellerId && (
               <RelatedSellerProducts
                 sellerId={sellerId}
@@ -700,6 +695,135 @@ function ProductPage(props: Props) {
               />
             )}
             <SellerReviews averageRating={4} totalReviews={93} />
+          </Box>
+
+          {/* RIGHT: 25% — Sell on QtyBiz CTA */}
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'flex' },
+              flexDirection: 'column',
+              gap: 2,
+              flexGrow: 1,
+              position: 'sticky',
+              top: 80,
+            }}
+          >
+            {/* ── Sell on QtyBiz ── */}
+            <Box
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1.5,
+                overflow: 'hidden',
+                backgroundColor: 'background.paper',
+              }}
+            >
+              {/* Header banner */}
+              <Box
+                sx={{
+                  background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
+                  px: 2,
+                  py: 2,
+                  textAlign: 'center',
+                }}
+              >
+                <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                  🏪 Sell on QtyBiz
+                </Typography>
+                <Typography sx={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)', mt: 0.5 }}>
+                  Reach 10,000+ verified B2B buyers
+                </Typography>
+              </Box>
+
+              {/* Benefits list */}
+              <Box sx={{ px: 2, py: 1.5 }}>
+                {[
+                  { icon: '📦', text: 'List products for free' },
+                  { icon: '🏭', text: 'Direct manufacturer reach' },
+                  { icon: '💬', text: 'Get genuine trade leads' },
+                  { icon: '🌍', text: 'Pan-India buyer network' },
+                  { icon: '📊', text: 'Seller dashboard & analytics' },
+                ].map(({ icon, text }) => (
+                  <Box
+                    key={text}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      py: 0.6,
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                      '&:last-child': { borderBottom: 'none' },
+                    }}
+                  >
+                    <span style={{ fontSize: '14px' }}>{icon}</span>
+                    <Typography sx={{ fontSize: '12.5px', color: 'text.primary' }}>{text}</Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              {/* CTA Button */}
+              <Box sx={{ px: 2, pb: 2 }}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  href="/become-a-seller"
+                  sx={{
+                    mt: 1,
+                    background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    textTransform: 'none',
+                    borderRadius: 1,
+                    py: 1,
+                    '&:hover': { opacity: 0.92 },
+                  }}
+                >
+                  Start Selling Today →
+                </Button>
+                <Typography sx={{ fontSize: '11px', color: 'text.secondary', textAlign: 'center', mt: 1 }}>
+                  Free registration · No commission
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* ── Need Help? ── */}
+            <Box
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1.5,
+                p: 2,
+                backgroundColor: 'background.paper',
+                textAlign: 'center',
+              }}
+            >
+              <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
+                💬 Need Help?
+              </Typography>
+              <Typography sx={{ fontSize: '12px', color: 'text.secondary', mb: 1.5, lineHeight: 1.5 }}>
+                Our experts are available Mon–Sat, 10am–6pm to assist you.
+              </Typography>
+              <Button
+                variant="outlined"
+                fullWidth
+                href="https://wa.me/919999999999"
+                target="_blank"
+                sx={{
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderRadius: 1,
+                  color: '#25D366',
+                  borderColor: '#25D366',
+                  '&:hover': { backgroundColor: '#f0fdf4', borderColor: '#25D366' },
+                }}
+              >
+                💬 Chat on WhatsApp
+              </Button>
+            </Box>
+
           </Box>
         </Box>
 

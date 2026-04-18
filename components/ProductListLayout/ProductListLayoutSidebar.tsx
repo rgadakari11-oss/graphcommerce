@@ -488,20 +488,6 @@ export const ProductListLayoutSidebar = memoDeep((props: ProductListLayoutProps)
                 <AppliedFilterChips />
               </Box>
 
-              {/* Search Suggestions */}
-              <Box
-                sx={(theme) => ({
-                  mt: 1,
-                  p: 2,
-                  borderRadius: '12px',
-                  bgcolor: theme.palette.background.paper,
-                  border: `1px solid ${theme.palette.divider}`,
-                })}
-              >
-                <ProductListSuggestions products={products} />
-              </Box>
-
-
             </>
           )}
         </Box>

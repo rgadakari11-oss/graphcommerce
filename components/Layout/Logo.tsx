@@ -6,7 +6,7 @@ export function Logo() {
     <LogoBase
       sx={{
         '& .GcLogo-logo': {
-          width: { xs: '90px', md: '175px' },
+          width: { xs: '110px', md: '175px' },
           //height: { xs: '16px', md: '33px' },
           height: 'auto',
           paddingLeft: { xs: '10px', md: 0 },
