@@ -237,7 +237,7 @@ export function Footer() {
           }}
         >
           <Typography sx={{ fontSize: '11px', color: '#9ca3af' }}>
-            © {new Date().getFullYear()} QtyBiz
+            © {new Date().getFullYear()} QtyBiz, All rights reserved.
           </Typography>
 
           <Stack direction="row" gap={1.5}>

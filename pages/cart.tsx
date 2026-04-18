@@ -192,7 +192,15 @@ function CartPage() {
               {/* Two Column Layout */}
               <Grid container spacing={4} sx={{ mb: 6 }}>
                 {/* Left Sidebar - Explanation */}
-                <Grid item xs={12} lg={4} xl={3.5}>
+                <Grid
+                  item
+                  xs={12}
+                  lg={4}
+                  xl={3.5}
+                  sx={{
+                    order: { xs: 2, lg: 1 }, // 👈 moves DOWN on mobile/laptop
+                  }}
+                >
                   <Paper
                     elevation={0}
                     sx={{
@@ -266,7 +274,15 @@ function CartPage() {
                 </Grid>
 
                 {/* Right Content - Quote Request Form */}
-                <Grid item xs={12} lg={8} xl={8.5}>
+                <Grid
+                  item
+                  xs={12}
+                  lg={8}
+                  xl={8.5}
+                  sx={{
+                    order: { xs: 1, lg: 2 },
+                  }}
+                >
                   <Paper
                     elevation={0}
                     sx={{
@@ -545,18 +561,7 @@ function CartPage() {
                     </AccordionDetails>
                   </Accordion>
 
-                  <Accordion sx={{ border: '2px solid #e2e8f0', borderRadius: '10px !important', mb: 2, '&:before': { display: 'none' }, '&:hover': { borderColor: '#667eea' } }}>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: '#f8fafc', '&:hover': { bgcolor: '#f1f5f9' } }}>
-                      <Typography fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontSize: '1rem' }}>
-                        <span style={{ fontSize: 22 }}>📊</span> Is there a minimum order quantity?
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ p: 3, bgcolor: 'white' }}>
-                      <Typography variant="body2" color="text.secondary" lineHeight={1.7} fontSize="0.875rem">
-                        We don't enforce strict minimums, but quotes become more competitive at higher volumes. Generally, orders over $5,000 qualify for better pricing tiers. However, we're happy to quote any order size if you have special requirements.
-                      </Typography>
-                    </AccordionDetails>
-                  </Accordion>
+
 
                   <Accordion sx={{ border: '2px solid #e2e8f0', borderRadius: '10px !important', mb: 2, '&:before': { display: 'none' }, '&:hover': { borderColor: '#667eea' } }}>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: '#f8fafc', '&:hover': { bgcolor: '#f1f5f9' } }}>
@@ -603,43 +608,12 @@ function CartPage() {
                     </AccordionDetails>
                   </Accordion>
 
-                  <Accordion sx={{ border: '2px solid #e2e8f0', borderRadius: '10px !important', mb: 2, '&:before': { display: 'none' }, '&:hover': { borderColor: '#667eea' } }}>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: '#f8fafc', '&:hover': { bgcolor: '#f1f5f9' } }}>
-                      <Typography fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontSize: '1rem' }}>
-                        <span style={{ fontSize: 22 }}>📦</span> What's included in shipping costs?
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ p: 3, bgcolor: 'white' }}>
-                      <Typography variant="body2" color="text.secondary" lineHeight={1.7} fontSize="0.875rem">
-                        Shipping costs in your quote cover standard ground freight to your delivery address. Large orders often qualify for free or reduced shipping. We can also adjust for expedited shipping, special handling, international shipping, or consolidated shipments to multiple locations.
-                      </Typography>
-                    </AccordionDetails>
-                  </Accordion>
+
                 </Box>
               </Paper>
 
               {/* Footer */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 4,
-                  textAlign: 'center',
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  mb: 5,
-                }}
-              >
-                <Typography variant="body2" color="text.secondary" lineHeight={1.7} fontSize="0.875rem">
-                  🔒 <strong>Your information is secure.</strong> We use industry-standard encryption and never share your data.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" lineHeight={1.7} fontSize="0.875rem" mt={2}>
-                  Questions? Contact us at <a href="tel:+15551234567" style={{ color: '#667eea', fontWeight: 600, textDecoration: 'none' }}>+1 (555) 123-4567</a> or <a href="mailto:quotes@wholesale.com" style={{ color: '#667eea', fontWeight: 600, textDecoration: 'none' }}>quotes@wholesale.com</a>
-                </Typography>
-                <Typography variant="body2" color="text.secondary" lineHeight={1.7} fontSize="0.875rem" mt={2}>
-                  <a href="#" style={{ color: '#667eea', fontWeight: 600, textDecoration: 'none' }}>Privacy Policy</a> • <a href="#" style={{ color: '#667eea', fontWeight: 600, textDecoration: 'none' }}>Terms of Service</a> • <a href="#" style={{ color: '#667eea', fontWeight: 600, textDecoration: 'none' }}>Return Policy</a>
-                </Typography>
-              </Paper>
+
             </>
           ) : (
             <EmptyCart disableMargin>

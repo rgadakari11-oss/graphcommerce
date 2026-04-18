@@ -326,7 +326,7 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
         }}
       >
         <SearchIcon sx={{ fontSize: 18 }} />
-        <span style={{ marginLeft: 4 }}>Search</span>
+        <span style={{ marginLeft: 10, fontSize: '14px' }}>Search</span>
       </Button>
     </Paper>
   )
@@ -400,7 +400,10 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
                     }}
                   >
                     <Toolbar sx={{ px: 2, minHeight: '56px !important', justifyContent: 'space-between' }}>
+                      {/* Logo — left aligned */}
                       <Logo />
+
+                      {/* Right actions */}
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         {cartEnabled && (
                           <CartFab
@@ -442,6 +445,7 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
                         </Box>
                       </Box>
                     </Toolbar>
+
                   </AppBar>
 
                   {/* ── MOBILE SEARCH OVERLAY ── */}

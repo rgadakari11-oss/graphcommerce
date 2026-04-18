@@ -173,40 +173,7 @@ function CategoryCard({
           )}
         </Box>
       ) : (
-        <Box
-          sx={{
-            height: 120,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 32,
-            bgcolor: '#f1f5f9',
-            position: 'relative',
-          }}
-        >
-          {icon}
-
-          {/* fallback label also works */}
-          {label && (
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 8,
-                left: 8,
-                px: 1.2,
-                py: '3px',
-                fontSize: '0.65rem',
-                fontWeight: 700,
-                borderRadius: '6px',
-                color: '#fff',
-                backgroundColor: '#173562',
-                fontFamily: '"DM Sans", sans-serif',
-              }}
-            >
-              {label}
-            </Box>
-          )}
-        </Box>
+        null
       )}
       {/* ── Card body ── */}
       <Box sx={{ p: '14px 16px 10px', flex: 1 }}>
