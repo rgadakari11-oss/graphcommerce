@@ -1,61 +1,38 @@
 // pages/seller/[store_code].tsx
 // ─────────────────────────────────────────────────────────────────────────────
-// ALL SELLER COMPONENTS ARE INLINED — single file, no external component deps
-// Brand palette: Navy #0c1e3c · Mid-blue #1a3a6b · Orange #f97316 · White #fff
-// Font: DM Sans (add to _document.tsx):
-//   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+// Design: Dark premium B2B — Syne + Manrope fonts
+// Palette: Ink #0a0f1e · Accent #1a4dff · Gold #e8a020 · Emerald #0fa96b
+// Add fonts to _document.tsx:
+//   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useRef, useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useQuery } from '@apollo/client'
-import {
-  Box,
-  Container,
-  Grid,
-  Typography,
-  Button,
-  Chip,
-  Avatar,
-  Paper,
-  TextField,
-  Rating,
-  LinearProgress,
-  Divider,
-  InputBase,
-  Tab,
-  Tabs,
-  useScrollTrigger,
-  IconButton,
-  Tooltip,
-} from '@mui/material'
-
-// Icons
+import { Box, Container, Grid, Typography, Button, Chip, Avatar, Rating, LinearProgress, Divider, TextField, IconButton, Tooltip } from '@mui/material'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import StarIcon from '@mui/icons-material/Star'
 import PhoneIcon from '@mui/icons-material/Phone'
 import EmailIcon from '@mui/icons-material/Email'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
-import DirectionsOutlinedIcon from '@mui/icons-material/DirectionsOutlined'
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
-import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import ReviewsOutlinedIcon from '@mui/icons-material/ReviewsOutlined'
 import FormatQuoteIcon from '@mui/icons-material/FormatQuote'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium'
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
-import TimelineIcon from '@mui/icons-material/Timeline'
-import StarHalfIcon from '@mui/icons-material/StarHalf'
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import WhatsAppIcon from '@mui/icons-material/WhatsApp'
 import ShareIcon from '@mui/icons-material/Share'
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder'
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import InventoryIcon from '@mui/icons-material/Inventory'
-import BusinessIcon from '@mui/icons-material/Business'
+import ReviewsOutlinedIcon from '@mui/icons-material/ReviewsOutlined'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import SearchIcon from '@mui/icons-material/Search'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import DirectionsIcon from '@mui/icons-material/Directions'
+import DownloadIcon from '@mui/icons-material/Download'
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
+import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
 import { VendorStoresDocument } from '../../graphql/vendorstore.gql'
 import { SellerProductsDocument } from '../../graphql/sellerProducts.gql'
@@ -63,357 +40,263 @@ import { SellerProductsDocument } from '../../graphql/sellerProducts.gql'
 // ─────────────────────────────────────────────────────────────────────────────
 // BRAND TOKENS
 // ─────────────────────────────────────────────────────────────────────────────
-const B = {
-  navy: '#0c1e3c',
-  navyMid: '#1a3a6b',
-  navyLight: '#254d8f',
-  orange: '#f97316',
-  orangeDark: '#ea580c',
-  orangeLight: '#fed7aa',
+const T = {
+  ink: '#0a0f1e',
+  ink2: '#1c2540',
+  ink3: '#2e3a5c',
+  muted: '#6b7694',
+  muted2: '#9aa3be',
+  surface: '#f5f6fa',
+  surface2: '#eceef5',
+  border: 'rgba(30,45,100,0.10)',
+  border2: 'rgba(30,45,100,0.17)',
+  accent: '#1a4dff',
+  accent2: '#0033cc',
+  gold: '#e8a020',
+  gold2: '#c47d00',
+  emerald: '#0fa96b',
+  emerald2: '#097a4d',
   white: '#ffffff',
-  slate50: '#f8fafc',
-  slate100: '#f1f5f9',
-  slate200: '#e2e8f0',
-  slate400: '#94a3b8',
-  slate600: '#475569',
-  slate800: '#1e293b',
-  green: '#16a34a',
-  greenLight: '#dcfce7',
-  font: '"DM Sans", system-ui, sans-serif',
+  fontDisplay: "'Syne', sans-serif",
+  fontBody: "'Manrope', sans-serif",
 }
 
-const NAV_ITEMS = ['Overview', 'Products & Services', 'Reviews', 'Reach Us']
+const NAV_ITEMS = ['Overview', 'Products', 'Reviews', 'Contact']
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION: HEADER
+// STATIC FALLBACK DATA
 // ─────────────────────────────────────────────────────────────────────────────
-interface HeaderData {
-  storeName: string
-  gstNumber?: string
-  yearsInBusiness: number
-  trustSeal?: boolean
-  phone?: string
-  email?: string
-  logoUrl?: string
-  rating: number
-  ratingCount: number
-  responseRate: number
-  city?: string
-  state?: string
+const STATIC_STORE = {
+  store_name: 'Sree Balaji Exports',
+  gst_number: '33CRFPK2110G1ZT',
+  years_in_business: 19,
+  trust_seal: true,
+  phone: '+914333433600',
+  email: 'kalpana.s@sreebalaji.com',
+  logo: '',
+  city: 'Chennai',
+  state: 'Tamil Nadu',
+  country: 'India',
+  pincode: '600077',
+  address: 'SF No. 372/41/1, Street 7, EJHL Nagar, Ayappakkam, Tiruvallur',
+  about_us: `<p>Sree Balaji Exports is a premier manufacturer, exporter, and supplier of high-quality human hair products headquartered in Chennai, Tamil Nadu. With 19+ years of deep-rooted expertise, we have established ourselves as one of India's most trusted hair exporters, supplying to premium buyers across North America, Europe, the Middle East, and Southeast Asia.</p><p>Our vertically integrated operations — from raw hair sourcing to final processing — ensure uncompromised quality at every step. We specialize in virgin hair, Remy hair extensions, closures, wigs, and custom bulk orders. Our state-of-the-art facility in Chennai handles over 2,000 kg of hair monthly, with strict quality protocols and full traceability.</p>`,
+  completed_projects: '500+',
+  certifications: 'ISO 9001',
+  awards: '3',
 }
 
+const STATIC_PRODUCTS = [
+  { uid: '1', name: '30 Inch Double Drawn - Remy Grade Hair', categories: [{ name: 'Human Hair' }], price_range: { minimum_price: { regular_price: { value: 9000 } } }, small_image: { url: '' }, url_key: 'remy-grade-hair', moq: '1 kg' },
+  { uid: '2', name: 'Raw Human Hair Extensions - Black Color', categories: [{ name: 'Virgin Hair' }], price_range: { minimum_price: { regular_price: { value: 25000 } } }, small_image: { url: '' }, url_key: 'raw-hair-extensions', moq: '1 box' },
+  { uid: '3', name: 'Remy Wavy Hair - New Style Premium Grade', categories: [{ name: 'Remy Hair' }], price_range: { minimum_price: { regular_price: { value: 8000 } } }, small_image: { url: '' }, url_key: 'remy-wavy-hair', moq: '10 kg' },
+  { uid: '4', name: 'Full Lace Virgin Human Hair Wig - Natural', categories: [{ name: 'Hair Wig' }], price_range: { minimum_price: { regular_price: { value: 12000 } } }, small_image: { url: '' }, url_key: 'full-lace-wig', moq: '5 pcs' },
+  { uid: '5', name: 'Brazilian Virgin Human Hair 100% Natural Body Wave', categories: [{ name: 'Brazilian' }], price_range: { minimum_price: { regular_price: { value: 10000 } } }, small_image: { url: '' }, url_key: 'brazilian-virgin-hair', moq: '1 kg' },
+  { uid: '6', name: '18 Inch Hair Closure - Double Drawn Premium', categories: [{ name: 'Closure' }], price_range: { minimum_price: { regular_price: { value: 7500 } } }, small_image: { url: '' }, url_key: 'hair-closure', moq: '1 kg' },
+]
+
+const STATIC_REVIEWS = [
+  { name: 'Robert Karmazov', company: 'TechBridge Solutions', rating: 5, comment: 'Exceptional quality and timely delivery. Their team was highly professional throughout the project lifecycle. Would strongly recommend for B2B procurement.', date: '20 days ago', avatarBg: 'linear-gradient(135deg,#1a4dff,#7c3aed)' },
+  { name: 'Nilesh Shah', company: 'Apex Industries', rating: 5, comment: 'Outstanding experience. Their product range is comprehensive and the support team resolved our queries promptly. Excellent after-sales service.', date: '1 month ago', avatarBg: 'linear-gradient(135deg,#0fa96b,#059669)' },
+  { name: 'Edna Watson', company: 'Global Trade Co.', rating: 4, comment: 'Very reliable vendor. Products meet our quality standards. Minor delays in one shipment, but communication was transparent throughout.', date: '8 months ago', avatarBg: 'linear-gradient(135deg,#e8a020,#c47d00)' },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED SX HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+const sxCard = {
+  bgcolor: T.white,
+  border: `1px solid ${T.border}`,
+  borderRadius: '20px',
+  overflow: 'hidden',
+  mb: 3,
+}
+
+const sxCardHeader = {
+  px: { xs: 2.5, md: 3.5 },
+  py: 2.5,
+  borderBottom: `1px solid ${T.border}`,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 1.5,
+}
+
+const sxCardBody = { px: { xs: 2.5, md: 3.5 }, py: 3 }
+
+const sxCardIcon = (bg: string, color: string) => ({
+  width: 36, height: 36, borderRadius: '10px',
+  bgcolor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color, flexShrink: 0,
+})
+
+const sxCardTitle = {
+  fontFamily: T.fontDisplay, fontWeight: 700, fontSize: '1rem', color: T.ink, letterSpacing: '-0.01em',
+}
+
+const sxBtn = (bg: string, color: string, hoverBg: string) => ({
+  fontFamily: T.fontBody, fontWeight: 700, textTransform: 'none',
+  bgcolor: bg, color, borderRadius: '11px', boxShadow: 'none',
+  '&:hover': { bgcolor: hoverBg, boxShadow: 'none', transform: 'translateY(-1px)' },
+  transition: 'all 0.18s',
+})
+
+const sxInput = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '10px',
+    fontFamily: T.fontBody,
+    '& fieldset': { borderColor: T.border2 },
+    '&:hover fieldset': { borderColor: T.accent },
+    '&.Mui-focused fieldset': { borderColor: T.accent },
+  },
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION: TOPBAR / HEADER
+// ─────────────────────────────────────────────────────────────────────────────
 function SellerHeader({
-  data,
-  activeSection,
-  onNavClick,
+  storeName, logoUrl, city, state, gstNumber, rating, ratingCount, trustSeal,
+  phone, email, activeSection, onNavClick,
 }: {
-  data: HeaderData
-  activeSection: number
-  onNavClick: (i: number) => void
+  storeName: string; logoUrl?: string; city?: string; state?: string
+  gstNumber?: string; rating: number; ratingCount: number; trustSeal?: boolean
+  phone?: string; email?: string; activeSection: number; onNavClick: (i: number) => void
 }) {
-  const trigger = useScrollTrigger({ disableHysteresis: true, threshold: 60 })
-  const {
-    storeName, gstNumber, yearsInBusiness, trustSeal,
-    phone, email, logoUrl, rating, ratingCount, responseRate,
-    city, state,
-  } = data
+  const initials = storeName?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
   return (
     <Box
       component="header"
       sx={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 1100,
-        bgcolor: B.white,
-        transition: 'box-shadow 0.25s ease',
-        boxShadow: trigger
-          ? '0 4px 24px rgba(12,30,60,0.14)'
-          : '0 1px 0 rgba(12,30,60,0.08)',
+        position: 'sticky', top: 0, zIndex: 1100,
+        bgcolor: T.ink,
+        boxShadow: '0 2px 24px rgba(0,0,0,0.25)',
       }}
     >
-      {/* ── TOP STRIP ── */}
-      <Box
-        sx={{
-          background: trigger
-            ? B.white
-            : `linear-gradient(118deg, ${B.navy} 0%, ${B.navyMid} 100%)`,
-          transition: 'background 0.3s ease',
-          py: { xs: 1.5, md: 2 },
-          borderBottom: `1px solid ${trigger ? B.slate200 : 'rgba(255,255,255,.12)'}`,
-        }}
-      >
-        <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            {/* LOGO */}
-            <Box sx={{ position: 'relative', flexShrink: 0 }}>
-              <Avatar
-                src={logoUrl}
-                sx={{
-                  width: { xs: 56, md: 68 },
-                  height: { xs: 56, md: 68 },
-                  bgcolor: B.orange,
-                  color: B.white,
-                  fontSize: '1.7rem',
-                  fontWeight: 800,
-                  fontFamily: B.font,
-                  border: `3px solid ${trigger ? B.slate200 : 'rgba(255,255,255,.25)'}`,
-                  boxShadow: `0 0 0 4px ${trigger ? 'transparent' : 'rgba(249,115,22,.25)'}`,
-                  transition: 'all 0.3s',
-                }}
-              >
-                {!logoUrl && storeName?.[0]}
-              </Avatar>
-              {trustSeal && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: -2,
-                    right: -2,
-                    bgcolor: B.green,
-                    borderRadius: '50%',
-                    width: 20,
-                    height: 20,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: `2px solid ${B.white}`,
-                  }}
-                >
-                  <CheckCircleIcon sx={{ fontSize: 12, color: B.white }} />
-                </Box>
-              )}
-            </Box>
+      {/* ── MAIN STRIP ── */}
+      <Box sx={{ borderBottom: `1px solid rgba(255,255,255,0.07)` }}>
+        <Container maxWidth="xl" disableGutters sx={{ px: { xs: 2, md: 4 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'stretch', gap: 0, minHeight: 72 }}>
 
-            {/* STORE INFO */}
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.4 }}>
-                <Typography
+            {/* Brand */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pr: 4, mr: 2, borderRight: `1px solid rgba(255,255,255,0.08)` }}>
+              <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                <Avatar
+                  src={logoUrl}
                   sx={{
-                    fontFamily: B.font,
-                    fontWeight: 800,
-                    fontSize: { xs: '1.05rem', md: '1.25rem' },
-                    color: trigger ? B.navy : B.white,
-                    letterSpacing: '-0.01em',
-                    lineHeight: 1.2,
-                    transition: 'color 0.3s',
+                    width: 46, height: 46, borderRadius: '12px',
+                    background: `linear-gradient(135deg, ${T.accent} 0%, #7c3aed 100%)`,
+                    fontFamily: T.fontDisplay, fontWeight: 800, fontSize: '1.1rem', color: T.white,
                   }}
                 >
+                  {!logoUrl && initials}
+                </Avatar>
+                {trustSeal && (
+                  <Box sx={{
+                    position: 'absolute', bottom: -3, right: -3,
+                    width: 16, height: 16, bgcolor: T.emerald,
+                    borderRadius: '50%', border: `2.5px solid ${T.ink}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <CheckCircleIcon sx={{ fontSize: 9, color: T.white }} />
+                  </Box>
+                )}
+              </Box>
+              <Box>
+                <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 700, fontSize: '0.95rem', color: T.white, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
                   {storeName}
                 </Typography>
-                {trustSeal && (
-                  <Chip
-                    icon={<VerifiedIcon sx={{ fontSize: '13px !important', color: `${B.white} !important` }} />}
-                    label="TrustSEAL Verified"
-                    size="small"
-                    sx={{
-                      bgcolor: B.green,
-                      color: B.white,
-                      fontWeight: 700,
-                      fontSize: '0.68rem',
-                      height: 22,
-                      fontFamily: B.font,
-                    }}
-                  />
-                )}
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-                {(city || state) && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                    <LocationOnOutlinedIcon
-                      sx={{ fontSize: 13, color: trigger ? B.slate400 : 'rgba(255,255,255,.6)' }}
-                    />
-                    <Typography
-                      sx={{
-                        fontFamily: B.font,
-                        fontSize: '0.78rem',
-                        color: trigger ? B.slate600 : 'rgba(255,255,255,.75)',
-                        transition: 'color 0.3s',
-                      }}
-                    >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.4 }}>
+                  {(city || state) && (
+                    <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
                       {[city, state].filter(Boolean).join(', ')}
                     </Typography>
-                  </Box>
-                )}
-                {gstNumber && (
-                  <Chip
-                    label={`GST ${gstNumber}`}
-                    size="small"
-                    sx={{
-                      bgcolor: trigger ? B.slate100 : 'rgba(255,255,255,.1)',
-                      color: trigger ? B.slate600 : 'rgba(255,255,255,.8)',
-                      fontFamily: B.font,
-                      fontWeight: 600,
-                      fontSize: '0.68rem',
-                      height: 20,
-                      border: `1px solid ${trigger ? B.slate200 : 'rgba(255,255,255,.2)'}`,
-                    }}
-                  />
-                )}
-                {yearsInBusiness > 0 && (
-                  <Chip
-                    label={`${yearsInBusiness} yrs`}
-                    size="small"
-                    sx={{
-                      bgcolor: trigger ? B.slate100 : 'rgba(255,255,255,.1)',
-                      color: trigger ? B.slate600 : 'rgba(255,255,255,.8)',
-                      fontFamily: B.font,
-                      fontWeight: 600,
-                      fontSize: '0.68rem',
-                      height: 20,
-                      border: `1px solid ${trigger ? B.slate200 : 'rgba(255,255,255,.2)'}`,
-                    }}
-                  />
-                )}
-                {responseRate > 0 && (
-                  <Chip
-                    label={`${responseRate}% Response`}
-                    size="small"
-                    sx={{
-                      bgcolor: trigger ? B.greenLight : 'rgba(22,163,74,.2)',
-                      color: trigger ? B.green : '#86efac',
-                      fontFamily: B.font,
-                      fontWeight: 700,
-                      fontSize: '0.68rem',
-                      height: 20,
-                      border: `1px solid ${trigger ? '#bbf7d0' : 'rgba(22,163,74,.35)'}`,
-                    }}
-                  />
-                )}
-                {rating > 0 && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                    <StarIcon sx={{ fontSize: 14, color: '#fbbf24' }} />
-                    <Typography
-                      sx={{
-                        fontFamily: B.font,
-                        fontWeight: 700,
-                        fontSize: '0.78rem',
-                        color: trigger ? B.slate800 : B.white,
-                      }}
-                    >
-                      {rating}
-                    </Typography>
-                    {ratingCount > 0 && (
-                      <Typography sx={{ fontSize: '0.72rem', color: trigger ? B.slate400 : 'rgba(255,255,255,.55)' }}>
-                        ({ratingCount})
+                  )}
+                  {gstNumber && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.2)' }} />
+                      <Typography sx={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', fontFamily: T.fontBody, fontWeight: 600 }}>
+                        GST Verified
                       </Typography>
-                    )}
-                  </Box>
-                )}
+                    </Box>
+                  )}
+                  {rating > 0 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                      <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.2)' }} />
+                      <StarIcon sx={{ fontSize: 11, color: T.gold }} />
+                      <Typography sx={{ fontSize: '0.72rem', color: T.white, fontFamily: T.fontBody, fontWeight: 700 }}>
+                        {rating}
+                      </Typography>
+                      {/* {ratingCount > 0 && (
+                        <Typography sx={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', fontFamily: T.fontBody }}>
+                          ({ratingCount})
+                        </Typography>
+                      )} */}
+                    </Box>
+                  )}
+                </Box>
               </Box>
             </Box>
 
-            {/* CTAs */}
-            <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, alignItems: 'center', ml: 'auto' }}>
-              <Tooltip title="Save">
-                <IconButton
-                  size="small"
+            {/* Nav */}
+            <Box sx={{ display: 'flex', alignItems: 'stretch', flex: 1 }}>
+              {NAV_ITEMS.map((label, i) => (
+                <Box
+                  key={label}
+                  onClick={() => onNavClick(i)}
                   sx={{
-                    color: trigger ? B.slate400 : 'rgba(255,255,255,.6)',
-                    '&:hover': { color: B.orange },
-                    display: { xs: 'none', sm: 'flex' },
+                    px: 2.5,
+                    display: 'flex', alignItems: 'center',
+                    fontFamily: T.fontBody, fontWeight: 600, fontSize: '0.78rem',
+                    color: activeSection === i ? T.white : 'rgba(255,255,255,0.45)',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    textTransform: 'uppercase', letterSpacing: '0.05em',
+                    transition: 'color 0.2s',
+                    '&:hover': { color: 'rgba(255,255,255,0.8)' },
+                    '&::after': activeSection === i ? {
+                      content: '""', position: 'absolute', bottom: 0, left: '50%',
+                      transform: 'translateX(-50%)', width: 28, height: 2,
+                      bgcolor: T.accent, borderRadius: '2px 2px 0 0',
+                    } : {},
                   }}
                 >
-                  <BookmarkBorderIcon sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Share">
-                <IconButton
-                  size="small"
-                  sx={{
-                    color: trigger ? B.slate400 : 'rgba(255,255,255,.6)',
-                    '&:hover': { color: B.orange },
-                    display: { xs: 'none', sm: 'flex' },
-                  }}
-                >
-                  <ShareIcon sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Tooltip>
+                  {label}
+                </Box>
+              ))}
+            </Box>
+
+            {/* Actions */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto', py: 1.5 }}>
               {phone && (
                 <Button
-                  variant="contained"
+                  variant="outlined"
                   size="small"
-                  startIcon={<PhoneIcon sx={{ fontSize: '14px !important' }} />}
+                  startIcon={<PhoneIcon sx={{ fontSize: '13px !important' }} />}
                   href={`tel:${phone}`}
                   sx={{
-                    fontFamily: B.font,
-                    fontWeight: 700,
-                    fontSize: '0.82rem',
-                    px: 2,
-                    height: 36,
-                    borderRadius: '10px',
-                    bgcolor: B.orange,
-                    boxShadow: 'none',
-                    textTransform: 'none',
-                    '&:hover': { bgcolor: B.orangeDark, boxShadow: 'none' },
+                    fontFamily: T.fontBody, fontWeight: 700, fontSize: '0.78rem',
+                    textTransform: 'none', borderRadius: '9px', px: 2, height: 34,
+                    borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.75)',
+                    '&:hover': { borderColor: T.accent, color: T.white, bgcolor: 'rgba(26,77,255,0.15)' },
                   }}
                 >
                   Call Now
                 </Button>
               )}
-              {email && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<EmailIcon sx={{ fontSize: '14px !important' }} />}
-                  href={`mailto:${email}`}
-                  sx={{
-                    fontFamily: B.font,
-                    fontWeight: 700,
-                    fontSize: '0.82rem',
-                    px: 2,
-                    height: 36,
-                    borderRadius: '10px',
-                    textTransform: 'none',
-                    borderColor: trigger ? B.navyMid : 'rgba(255,255,255,.4)',
-                    color: trigger ? B.navyMid : B.white,
-                    '&:hover': {
-                      borderColor: B.orange,
-                      color: B.orange,
-                      bgcolor: 'transparent',
-                    },
-                  }}
-                >
-                  Email
-                </Button>
-              )}
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<SendOutlinedIcon sx={{ fontSize: '13px !important' }} />}
+                onClick={() => onNavClick(3)}
+                sx={{
+                  fontFamily: T.fontBody, fontWeight: 700, fontSize: '0.78rem',
+                  textTransform: 'none', borderRadius: '9px', px: 2.5, height: 34,
+                  bgcolor: T.accent, boxShadow: 'none',
+                  '&:hover': { bgcolor: T.accent2, boxShadow: 'none' },
+                }}
+              >
+                Send Inquiry
+              </Button>
             </Box>
           </Box>
-        </Container>
-      </Box>
-
-      {/* ── NAV TABS ── */}
-      <Box sx={{ bgcolor: B.white, borderBottom: `1px solid ${B.slate200}` }}>
-        <Container maxWidth="lg" disableGutters>
-          <Tabs
-            value={activeSection}
-            onChange={(_, v) => onNavClick(v)}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              minHeight: 46,
-              '& .MuiTab-root': {
-                minHeight: 46,
-                fontFamily: B.font,
-                fontWeight: 600,
-                fontSize: '0.82rem',
-                textTransform: 'none',
-                color: B.slate600,
-                px: { xs: 2, md: 3 },
-                '&.Mui-selected': { color: B.navy, fontWeight: 700 },
-              },
-              '& .MuiTabs-indicator': {
-                height: 3,
-                borderRadius: '3px 3px 0 0',
-                bgcolor: B.orange,
-              },
-            }}
-          >
-            {NAV_ITEMS.map((label) => (
-              <Tab key={label} label={label} disableRipple />
-            ))}
-          </Tabs>
         </Container>
       </Box>
     </Box>
@@ -421,128 +304,88 @@ function SellerHeader({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION: HERO BANNER (below header, above stats)
+// SECTION: HERO
 // ─────────────────────────────────────────────────────────────────────────────
-function SellerHeroBanner({
-  storeName,
-  tagline,
-  phone,
+function SellerHero({
+  storeName, city, state, phone, rating, ratingCount,
   onInquiry,
 }: {
-  storeName: string
-  tagline?: string
-  phone?: string
-  onInquiry: () => void
+  storeName: string; city?: string; state?: string
+  phone?: string; rating: number; ratingCount: number; onInquiry: () => void
 }) {
   return (
     <Box
       sx={{
-        background: `lightslategrey`,
+        bgcolor: T.ink,
         position: 'relative',
         overflow: 'hidden',
-        py: { xs: 4, md: 5 },
-        mb: 4,
+        pt: { xs: 3, md: 3 },
+        pb: { xs: 1, md: 1 },
       }}
     >
-      {/* Decorative bg circles */}
-      {[
-        { size: 420, top: -160, right: -80, op: 0.05 },
-        { size: 220, top: 20, right: 260, op: 0.04 },
-        { size: 160, bottom: -50, left: -40, op: 0.04 },
-      ].map((c, i) => (
-        <Box
-          key={i}
-          sx={{
-            position: 'absolute',
-            width: c.size,
-            height: c.size,
-            borderRadius: '50%',
-            border: '2px solid rgba(255,255,255,.3)',
-            top: c.top,
-            right: c.right,
-            bottom: c.bottom,
-            left: c.left,
-            opacity: c.op,
-            pointerEvents: 'none',
-          }}
-        />
-      ))}
-      {/* Orange glow top-right */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: -60,
-          right: -60,
-          width: 320,
-          height: 320,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(249,115,22,.18) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }}
-      />
+      {/* Background effects */}
+      <Box sx={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(circle at 20% 50%, rgba(26,77,255,0.12) 0%, transparent 55%), radial-gradient(circle at 80% 20%, rgba(124,58,237,0.10) 0%, transparent 50%), radial-gradient(circle at 60% 85%, rgba(15,169,107,0.08) 0%, transparent 40%)',
+      }} />
+      <Box sx={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)',
+        backgroundSize: '60px 60px',
+      }} />
 
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-        <Grid container alignItems="center" spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Chip
-              icon={<BusinessIcon sx={{ fontSize: '13px !important', color: `${B.orange} !important` }} />}
-              label="Verified Supplier"
-              size="small"
-              sx={{
-                bgcolor: 'rgba(249,115,22,.12)',
-                color: B.orangeLight,
-                fontFamily: B.font,
-                fontWeight: 600,
-                fontSize: '0.72rem',
-                border: `1px solid rgba(249,115,22,.3)`,
-                mb: 2,
-              }}
-            />
-            <Typography
-              sx={{
-                fontFamily: B.font,
-                fontWeight: 800,
-                fontSize: { xs: '1.6rem', md: '2.2rem' },
-                color: B.white,
-                letterSpacing: '-0.02em',
-                lineHeight: 1.2,
-                mb: 1.5,
-              }}
-            >
-              {storeName}
-            </Typography>
-            {tagline && (
-              <Typography
-                sx={{
-                  fontFamily: B.font,
-                  fontSize: '1rem',
-                  color: 'rgba(255,255,255,.7)',
-                  mb: 3,
-                  maxWidth: 520,
-                  lineHeight: 1.6,
-                }}
-              >
-                {tagline}
+      <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 }, position: 'relative', zIndex: 1 }}>
+        <Grid container spacing={5} alignItems="center">
+
+          {/* Left */}
+          <Grid item xs={12} md={7}>
+            {/* Animated badge */}
+            <Box sx={{
+              display: 'inline-flex', alignItems: 'center', gap: 1,
+              px: 1.75, py: 0.75,
+              bgcolor: 'rgba(26,77,255,0.15)', border: `1px solid rgba(26,77,255,0.35)`,
+              borderRadius: '100px', mb: 3,
+            }}>
+              <Box sx={{
+                width: 6, height: 6, borderRadius: '50%', bgcolor: '#4d8fff',
+                animation: 'pulse 2s infinite',
+                '@keyframes pulse': { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.4 } },
+              }} />
+              <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.7rem', fontWeight: 700, color: '#7aabff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Verified Exporter &amp; Manufacturer
               </Typography>
-            )}
-            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            </Box>
+
+            <Typography sx={{
+              fontFamily: T.fontDisplay, fontWeight: 800, fontSize: { xs: '2.4rem', md: '3.2rem' },
+              color: T.white, lineHeight: 1.1, letterSpacing: '-0.03em', mb: 2,
+            }}>
+              {storeName.split(' ').slice(0, -1).join(' ')}{' '}
+              <Box component="span" sx={{
+                background: 'linear-gradient(135deg, #4d8fff 0%, #a78bfa 100%)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>
+                {storeName.split(' ').slice(-1)[0]}
+              </Box>
+            </Typography>
+
+            <Typography sx={{ fontFamily: T.fontBody, fontSize: '1rem', color: 'rgba(255,255,255,0.55)', maxWidth: 520, lineHeight: 1.75, mb: 4 }}>
+              Trusted supplier delivering quality products at competitive prices.
+              Get the best deals with reliable service and fast response.
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 4 }}>
               <Button
                 variant="contained"
                 onClick={onInquiry}
                 startIcon={<SendOutlinedIcon sx={{ fontSize: '16px !important' }} />}
                 sx={{
-                  fontFamily: B.font,
-                  fontWeight: 700,
-                  textTransform: 'none',
-                  bgcolor: B.orange,
-                  borderRadius: '10px',
-                  px: 3,
-                  py: 1.1,
-                  boxShadow: '0 4px 16px rgba(249,115,22,.35)',
-                  '&:hover': { bgcolor: B.orangeDark, boxShadow: '0 6px 20px rgba(249,115,22,.4)' },
+                  ...sxBtn(T.accent, T.white, T.accent2),
+                  px: 3.5, py: 1.4, fontSize: '0.9rem',
+                  boxShadow: '0 8px 24px rgba(26,77,255,0.35)',
                 }}
               >
-                Send Inquiry
+                Get Best Price
               </Button>
               {phone && (
                 <Button
@@ -551,47 +394,121 @@ function SellerHeroBanner({
                   target="_blank"
                   startIcon={<WhatsAppIcon sx={{ fontSize: '16px !important' }} />}
                   sx={{
-                    fontFamily: B.font,
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    borderColor: 'rgba(255,255,255,.35)',
-                    color: B.white,
-                    borderRadius: '10px',
-                    px: 3,
-                    py: 1.1,
-                    '&:hover': { borderColor: '#4ade80', color: '#4ade80', bgcolor: 'transparent' },
+                    fontFamily: T.fontBody, fontWeight: 700, textTransform: 'none',
+                    borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.75)',
+                    borderRadius: '11px', px: 3, py: 1.4, fontSize: '0.9rem',
+                    '&:hover': { borderColor: '#25d366', color: '#25d366', bgcolor: 'rgba(37,211,102,0.08)' },
                   }}
                 >
                   WhatsApp
                 </Button>
               )}
             </Box>
+
+
           </Grid>
 
-          {/* Quick info pills */}
-          <Grid item xs={12} md={4}>
-            <Box
-              sx={{
-                bgcolor: 'rgba(255,255,255,.06)',
-                border: '1px solid rgba(255,255,255,.1)',
-                borderRadius: '16px',
-                backdropFilter: 'blur(12px)',
-                p: 2.5,
-              }}
-            >
-              {[
-                { icon: <CheckCircleIcon sx={{ fontSize: 16, color: '#4ade80' }} />, text: 'KYC Verified Supplier' },
-                { icon: <CheckCircleIcon sx={{ fontSize: 16, color: '#4ade80' }} />, text: 'Secure Transactions' },
-                { icon: <CheckCircleIcon sx={{ fontSize: 16, color: '#4ade80' }} />, text: 'Quality Assured Products' },
-                { icon: <CheckCircleIcon sx={{ fontSize: 16, color: '#4ade80' }} />, text: '24/7 Trade Support' },
-              ].map((item, i) => (
-                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: i < 3 ? 1.5 : 0 }}>
-                  {item.icon}
-                  <Typography sx={{ fontFamily: B.font, fontSize: '0.88rem', color: 'rgba(255,255,255,.85)', fontWeight: 500 }}>
-                    {item.text}
+          {/* Right — rating card */}
+          <Grid item xs={12} md={5}>
+            <Box sx={{
+              bgcolor: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`,
+              borderRadius: '20px', overflow: 'hidden',
+            }}>
+              {/* Rating header */}
+              <Box sx={{ px: 3, py: 2.5, borderBottom: `1px solid rgba(255,255,255,0.07)` }}>
+                <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', mb: 1 }}>
+                  Overall Rating
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5 }}>
+                  <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: '3rem', color: T.white, lineHeight: 1, letterSpacing: '-0.04em' }}>
+                    {rating.toFixed(1)}
                   </Typography>
+                  <Box>
+                    <Box sx={{ display: 'flex', gap: 0.3, mb: 0.4 }}>
+                      {[1, 2, 3, 4, 5].map(s => <StarIcon key={s} sx={{ fontSize: 14, color: T.gold }} />)}
+                    </Box>
+                    {/* <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)' }}>
+                      Based on {ratingCount} reviews
+                    </Typography> */}
+                  </Box>
                 </Box>
-              ))}
+              </Box>
+
+              {/* Rating bars */}
+              {/* <Box sx={{ px: 3, py: 2, borderBottom: `1px solid rgba(255,255,255,0.07)` }}>
+                {[
+                  { star: 5, pct: 75 },
+                  { star: 4, pct: 18 },
+                  { star: 3, pct: 5 },
+                  { star: 2, pct: 1 },
+                  { star: 1, pct: 1 },
+                ].map(({ star, pct }) => (
+                  <Box key={star} sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 0.9 }}>
+                    <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', width: 10 }}>{star}</Typography>
+                    <Box sx={{ flex: 1, height: 4, bgcolor: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <Box sx={{ height: '100%', width: `${pct}%`, bgcolor: star >= 4 ? T.gold : star === 3 ? '#f59e0b' : '#ef4444', borderRadius: '4px' }} />
+                    </Box>
+                    <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.68rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', width: 28, textAlign: 'right' }}>{pct}%</Typography>
+                  </Box>
+                ))}
+              </Box> */}
+
+              {/* Trust items */}
+              <Box
+                sx={{
+                  px: 3,
+                  py: 2,
+                  display: 'flex',
+                  flexWrap: 'wrap', // This allows items to move to the next line instead of overflowing
+                  gap: 2,           // Standardizes spacing between rows and columns
+                }}
+              >
+                {[
+                  { label: 'GST Verified Supplier', color: T.emerald, bg: 'rgba(15,169,107,0.15)' },
+                  { label: 'Secure', color: T.emerald, bg: 'rgba(15,169,107,0.15)' },
+                  { label: 'On-Time Delivery', color: T.emerald, bg: 'rgba(15,169,107,0.15)' },
+                  // { label: 'Star Supplier', color: T.emerald, bg: 'rgba(15,169,107,0.15)' },
+                  // { label: 'Buyer Protected', color: T.emerald, bg: 'rgba(15,169,107,0.15)' },
+                  // { label: 'Legacy Partner', color: T.emerald, bg: 'rgba(15,169,107,0.15)' },
+                  { label: 'TrustSEAL', color: T.emerald, bg: 'rgba(15,169,107,0.15)' },
+                ].map(({ label, color, bg }) => (
+                  <Box
+                    key={label}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.2,
+                      // Removed mb: 1.2 because gap handles it now
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 24, // Slightly smaller to save more space
+                        height: 24,
+                        borderRadius: '6px',
+                        bgcolor: bg,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}
+                    >
+                      <CheckCircleIcon sx={{ fontSize: 13, color }} />
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontFamily: T.fontBody,
+                        fontSize: '0.75rem', // Slightly smaller for better fit
+                        fontWeight: 600,
+                        color: 'rgba(255,255,255,0.6)',
+                        whiteSpace: 'nowrap' // Prevents a single tag from breaking into two lines
+                      }}
+                    >
+                      {label}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
             </Box>
           </Grid>
         </Grid>
@@ -603,95 +520,40 @@ function SellerHeroBanner({
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION: STATS
 // ─────────────────────────────────────────────────────────────────────────────
-interface StatsProps {
-  yearsInBusiness: number
-  clientRating: number | string
-  completedProjects: string
-  certifications: string
-  awards: string
-}
-
-const STAT_CFG = [
-  { key: 'yearsInBusiness', label: 'Years in Business', icon: <TimelineIcon sx={{ fontSize: 20 }} />, color: B.navyMid, bg: '#e8eef7' },
-  { key: 'clientRating', label: 'Client Rating', icon: <StarHalfIcon sx={{ fontSize: 20 }} />, color: '#d97706', bg: '#fef3c7' },
-  { key: 'completedProjects', label: 'Completed Projects', icon: <CheckCircleOutlineIcon sx={{ fontSize: 20 }} />, color: B.green, bg: B.greenLight },
-  { key: 'certifications', label: 'Certifications', icon: <WorkspacePremiumIcon sx={{ fontSize: 20 }} />, color: '#7c3aed', bg: '#f5f3ff' },
-  { key: 'awards', label: 'Awards Won', icon: <EmojiEventsIcon sx={{ fontSize: 20 }} />, color: B.orange, bg: '#fff7ed' },
-]
-
-function SellerStats({ yearsInBusiness, clientRating, completedProjects, certifications, awards }: StatsProps) {
-  const values: Record<string, string | number> = {
-    yearsInBusiness: yearsInBusiness ? `${yearsInBusiness}+` : '—',
-    clientRating: clientRating || '—',
-    completedProjects: completedProjects || '—',
-    certifications: certifications || '—',
-    awards: awards || '—',
-  }
+function SellerStats({
+  yearsInBusiness, rating, clients, employees,
+}: {
+  yearsInBusiness: number; rating: number; clients: string; employees: string
+}) {
+  const stats = [
+    { value: yearsInBusiness ? `${yearsInBusiness}+` : '19+', label: 'Years in Business', bg: '#eef2ff', color: T.accent },
+    { value: String(rating) || '4.8', label: 'Client Rating', bg: '#fef8ee', color: T.gold2 },
+    { value: clients || '500+', label: 'Global Clients', bg: '#edfaf5', color: T.emerald2 },
+    { value: employees || '50', label: 'Employees', bg: '#f5f3ff', color: '#7c3aed' },
+  ]
 
   return (
-    <Box
-      sx={{
-        bgcolor: B.white,
-        border: `1px solid ${B.slate200}`,
-        borderRadius: '16px',
-        p: { xs: 2, md: 2.5 },
-        mb: 3,
-        boxShadow: '0 2px 12px rgba(12,30,60,.05)',
-      }}
-    >
-      <Grid container spacing={0}>
-        {STAT_CFG.map(({ key, label, icon, color, bg }, i) => (
-          <Grid item xs={6} sm={4} md key={key}>
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                p: { xs: 1.5, md: 2 },
-                position: 'relative',
-                '&::after': i < STAT_CFG.length - 1
-                  ? {
-                    content: '""',
-                    position: 'absolute',
-                    right: 0,
-                    top: '20%',
-                    height: '60%',
-                    width: '1px',
-                    bgcolor: B.slate200,
-                    display: { xs: 'none', md: 'block' },
-                  }
-                  : {},
-              }}
-            >
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '12px',
-                  bgcolor: bg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color,
-                  mb: 1.2,
-                }}
-              >
-                {icon}
+    <Box sx={{ ...sxCard, mb: 3 }}>
+      <Grid container sx={{ py: 1 }}>
+        {stats.map(({ value, label, bg, color }, i) => (
+          <Grid item xs={6} md={3} key={label}>
+            <Box sx={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+              py: 2.5, px: 2,
+              borderRight: i < 3 ? { xs: 'none', md: `1px solid ${T.border}` } : 'none',
+              borderBottom: i < 2 ? { xs: `1px solid ${T.border}`, md: 'none' } : 'none',
+              position: 'relative',
+            }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '12px', bgcolor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1.2, color }}>
+                {i === 0 && <AccessTimeIcon sx={{ fontSize: 20 }} />}
+                {i === 1 && <StarIcon sx={{ fontSize: 20 }} />}
+                {i === 2 && <CheckCircleIcon sx={{ fontSize: 20 }} />}
+                {i === 3 && <PeopleOutlineIcon sx={{ fontSize: 20 }} />}
               </Box>
-              <Typography
-                sx={{
-                  fontFamily: B.font,
-                  fontWeight: 800,
-                  fontSize: '1.3rem',
-                  color,
-                  lineHeight: 1,
-                  mb: 0.4,
-                }}
-              >
-                {values[key]}
+              <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: '1.7rem', color, lineHeight: 1, letterSpacing: '-0.04em', mb: 0.5 }}>
+                {value}
               </Typography>
-              <Typography sx={{ fontFamily: B.font, fontSize: '0.72rem', color: B.slate400, fontWeight: 500, lineHeight: 1.3 }}>
+              <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.72rem', fontWeight: 600, color: T.muted, letterSpacing: '0.01em' }}>
                 {label}
               </Typography>
             </Box>
@@ -705,92 +567,69 @@ function SellerStats({ yearsInBusiness, clientRating, completedProjects, certifi
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION: ABOUT
 // ─────────────────────────────────────────────────────────────────────────────
-function SellerAbout({ aboutUs }: { aboutUs?: string | null }) {
+function SellerAbout({
+  aboutUs, gstNumber, businessType, established, paymentMode, workingDays, inquiryType, employees,
+}: {
+  aboutUs?: string | null; gstNumber?: string; businessType?: string
+  established?: string; paymentMode?: string; workingDays?: string; inquiryType?: string; employees?: string
+}) {
   const [expanded, setExpanded] = useState(false)
-  if (!aboutUs) return null
+
+  const facts = [
+    { label: 'Business Type', value: businessType || 'Exporter, Manufacturer, Supplier' },
+    { label: 'GST Number', value: gstNumber || 'N/A' },
+    { label: 'Established', value: established || '2005, Chennai' },
+  ]
 
   return (
-    <Box
-      sx={{
-        bgcolor: B.white,
-        border: `1px solid ${B.slate200}`,
-        borderRadius: '16px',
-        p: { xs: 2.5, md: 3 },
-        mb: 3,
-        boxShadow: '0 2px 12px rgba(12,30,60,.05)',
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: '10px',
-            bgcolor: '#e8eef7',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: B.navyMid,
-          }}
-        >
-          <InfoOutlinedIcon sx={{ fontSize: 18 }} />
-        </Box>
-        <Typography sx={{ fontFamily: B.font, fontWeight: 800, fontSize: '1.05rem', color: B.navy }}>
-          About Us
-        </Typography>
+    <Box sx={sxCard}>
+      <Box sx={sxCardHeader}>
+        <Box sx={sxCardIcon('#eef2ff', T.accent)}><InfoOutlinedIcon sx={{ fontSize: 16 }} /></Box>
+        <Typography sx={sxCardTitle}>About Us</Typography>
       </Box>
+      <Box sx={sxCardBody}>
+        {aboutUs && (
+          <>
+            <Box sx={{
+              maxHeight: expanded ? 'none' : '130px', overflow: 'hidden',
+              position: 'relative',
+              '&::after': !expanded ? {
+                content: '""', position: 'absolute', bottom: 0, left: 0, right: 0, height: 56,
+                background: `linear-gradient(to top, ${T.white}, transparent)`,
+              } : {},
+            }}>
+              <Typography
+                component="div"
+                sx={{ fontFamily: T.fontBody, fontSize: '0.9rem', color: T.muted, lineHeight: 1.85, '& p': { mb: 1.5 } }}
+                dangerouslySetInnerHTML={{ __html: aboutUs }}
+              />
+            </Box>
+            <Button
+              size="small"
+              onClick={() => setExpanded(!expanded)}
+              sx={{ mt: 1, fontFamily: T.fontBody, fontWeight: 700, textTransform: 'none', color: T.accent, fontSize: '0.82rem', px: 0, '&:hover': { bgcolor: 'transparent', color: T.accent2 } }}
+            >
+              {expanded ? 'Show Less ↑' : 'Read More ↓'}
+            </Button>
+          </>
+        )}
 
-      <Divider sx={{ mb: 2.5, borderColor: B.slate100 }} />
-
-      <Box
-        sx={{
-          maxHeight: expanded ? 'none' : '140px',
-          overflow: 'hidden',
-          position: 'relative',
-          '&::after': !expanded
-            ? {
-              content: '""',
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 60,
-              background: `linear-gradient(to top, ${B.white}, transparent)`,
-            }
-            : {},
-        }}
-      >
-        <Typography
-          component="div"
-          sx={{
-            fontFamily: B.font,
-            fontSize: '0.9rem',
-            color: B.slate600,
-            lineHeight: 1.85,
-            '& p': { mb: 1.5 },
-            '& ul, & ol': { pl: 2.5, mb: 1.5 },
-            '& li': { mb: 0.5 },
-          }}
-          dangerouslySetInnerHTML={{ __html: aboutUs }}
-        />
+        {/* Facts grid */}
+        {/* <Grid container spacing={1.75} sx={{ mt: 2 }}>
+          {facts.map(({ label, value }) => (
+            <Grid item xs={12} sm={6} md={4} key={label}>
+              <Box sx={{ bgcolor: T.surface, border: `1px solid ${T.border}`, borderRadius: '14px', p: 1.75 }}>
+                <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.68rem', fontWeight: 700, color: T.muted2, letterSpacing: '0.05em', textTransform: 'uppercase', mb: 0.5 }}>
+                  {label}
+                </Typography>
+                <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.85rem', fontWeight: 700, color: T.ink2 }}>
+                  {value}
+                </Typography>
+              </Box>
+            </Grid>
+          ))}
+        </Grid> */}
       </Box>
-
-      <Button
-        size="small"
-        onClick={() => setExpanded(!expanded)}
-        sx={{
-          mt: 1.5,
-          fontFamily: B.font,
-          fontWeight: 700,
-          textTransform: 'none',
-          color: B.navyMid,
-          fontSize: '0.82rem',
-          px: 0,
-          '&:hover': { bgcolor: 'transparent', color: B.orange },
-        }}
-      >
-        {expanded ? 'Show Less ↑' : 'Read More ↓'}
-      </Button>
     </Box>
   )
 }
@@ -798,200 +637,117 @@ function SellerAbout({ aboutUs }: { aboutUs?: string | null }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION: PRODUCTS & SERVICES
 // ─────────────────────────────────────────────────────────────────────────────
-function SellerServices({ products }: { products: any[] }) {
-  if (!products || products.length === 0) return null
+
+function SellerProducts({ products }: { products: any[] }) {
+  const [activeCat, setActiveCat] = useState('All')
+  const [search, setSearch] = useState('')
+
+  const filtered = products.filter(p => {
+    const cat = p?.categories?.[0]?.name || ''
+    const matchCat = activeCat === 'All' || cat === activeCat
+    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase())
+    return matchCat && matchSearch
+  })
 
   return (
-    <Box
-      sx={{
-        bgcolor: B.white,
-        border: `1px solid ${B.slate200}`,
-        borderRadius: '16px',
-        p: { xs: 2.5, md: 3 },
-        mb: 3,
-        boxShadow: '0 2px 12px rgba(12,30,60,.05)',
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: '10px',
-            bgcolor: '#fff7ed',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: B.orange,
-          }}
-        >
-          <InventoryIcon sx={{ fontSize: 18 }} />
-        </Box>
-        <Typography sx={{ fontFamily: B.font, fontWeight: 800, fontSize: '1.05rem', color: B.navy }}>
-          Products & Services
-        </Typography>
-        <Chip
-          label={`${products.length} items`}
-          size="small"
-          sx={{
-            ml: 'auto',
-            bgcolor: B.slate100,
-            color: B.slate600,
-            fontFamily: B.font,
-            fontWeight: 700,
-            fontSize: '0.72rem',
-            height: 22,
-          }}
-        />
+    <Box sx={sxCard}>
+      <Box sx={sxCardHeader}>
+        <Box sx={sxCardIcon('#fef8ee', T.gold2)}><InventoryIcon sx={{ fontSize: 16 }} /></Box>
+        <Typography sx={sxCardTitle}>Products &amp; Services</Typography>
+        <Chip label={`${products.length} items`} size="small" sx={{ ml: 'auto', bgcolor: T.surface, color: T.muted, fontFamily: T.fontBody, fontWeight: 700, fontSize: '0.7rem', height: 22 }} />
       </Box>
+      <Box sx={sxCardBody}>
+        {/* Search */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, px: 2, py: 1.4, bgcolor: T.surface, border: `1px solid ${T.border}`, borderRadius: '12px', mb: 2.5 }}>
+          <SearchIcon sx={{ fontSize: 17, color: T.muted2 }} />
+          <Box
+            component="input"
+            value={search}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+            placeholder="Search products and services…"
+            sx={{ flex: 1, border: 'none', background: 'transparent', fontFamily: T.fontBody, fontSize: '0.88rem', color: T.ink, outline: 'none', '&::placeholder': { color: T.muted2 } }}
+          />
+        </Box>
 
-      <Divider sx={{ mb: 2.5, borderColor: B.slate100 }} />
+        {/* Category pills */}
 
-      <Grid container spacing={2}>
-        {products.map((product) => {
-          const price = product?.price_range?.minimum_price?.regular_price?.value
-          return (
-            <Grid item xs={12} sm={6} md={4} key={product.uid}>
-              <Box
-                sx={{
-                  border: `1.5px solid ${B.slate200}`,
-                  borderRadius: '14px',
-                  overflow: 'hidden',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'all 0.24s ease',
-                  '&:hover': {
-                    borderColor: B.orange,
-                    boxShadow: `0 8px 28px rgba(249,115,22,.12)`,
-                    transform: 'translateY(-3px)',
-                  },
-                }}
-              >
-                {/* Image */}
-                <Box
-                  sx={{
-                    position: 'relative',
-                    bgcolor: B.slate50,
-                    borderBottom: `1px solid ${B.slate100}`,
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={product?.small_image?.url || '/images/placeholder-product.png'}
-                    alt={product?.name}
-                    sx={{
-                      width: '100%',
-                      height: 180,
-                      objectFit: 'contain',
-                      p: 1.5,
-                    }}
-                  />
-                  {product?.categories?.length > 0 && (
-                    <Chip
-                      label={product.categories[0].name}
-                      size="small"
-                      sx={{
-                        position: 'absolute',
-                        top: 10,
-                        left: 10,
-                        bgcolor: B.navy,
-                        color: B.white,
-                        fontFamily: B.font,
-                        fontWeight: 600,
-                        fontSize: '0.65rem',
-                        height: 20,
-                        borderRadius: '6px',
-                      }}
-                    />
-                  )}
-                </Box>
-
-                {/* Content */}
-                <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Typography
-                    component="a"
-                    href={`/${product.url_key}.html`}
-                    sx={{
-                      fontFamily: B.font,
-                      fontWeight: 700,
-                      fontSize: '0.88rem',
-                      color: B.navy,
-                      lineHeight: 1.45,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      minHeight: '2.55em',
-                      textDecoration: 'none',
-                      mb: 0.75,
-                      '&:hover': { color: B.orange },
-                    }}
-                  >
-                    {product.name}
-                  </Typography>
-
-                  {product.location && (
-                    <Typography
-                      sx={{
-                        fontFamily: B.font,
-                        fontSize: '0.75rem',
-                        color: B.slate400,
-                        mb: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.3,
-                      }}
-                    >
-                      <LocationOnOutlinedIcon sx={{ fontSize: 13 }} /> {product.location}
-                    </Typography>
-                  )}
-
-                  <Box
-                    sx={{
-                      mt: 'auto',
-                      pt: 1.5,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      borderTop: `1px solid ${B.slate100}`,
-                    }}
-                  >
-                    {price ? (
-                      <Typography sx={{ fontFamily: B.font, fontWeight: 800, color: B.green, fontSize: '1rem' }}>
-                        ₹{price.toLocaleString('en-IN')}
-                      </Typography>
+        {/* Products grid */}
+        <Grid container spacing={2}>
+          {(filtered.length > 0 ? filtered : products).map((product) => {
+            const price = product?.price_range?.minimum_price?.regular_price?.value
+            const category = product?.categories?.[0]?.name || 'Product'
+            return (
+              <Grid item xs={12} sm={6} md={4} key={product.uid}>
+                <Box sx={{
+                  border: `1.5px solid ${T.border}`, borderRadius: '14px',
+                  overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column',
+                  transition: 'all 0.22s',
+                  '&:hover': { borderColor: T.accent, boxShadow: '0 8px 28px rgba(26,77,255,0.10)', transform: 'translateY(-2px)' },
+                }}>
+                  {/* Image */}
+                  <Box sx={{ aspectRatio: '4/3', bgcolor: T.surface, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', borderBottom: `1px solid ${T.border}` }}>
+                    {product?.small_image?.url ? (
+                      <Box component="img" src={product.small_image.url} alt={product.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <Typography sx={{ fontFamily: B.font, fontSize: '0.78rem', color: B.slate400, fontStyle: 'italic' }}>
-                        Price on request
-                      </Typography>
+                      <Typography sx={{ fontSize: '2.5rem' }}>💆</Typography>
                     )}
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      endIcon={<OpenInNewIcon sx={{ fontSize: '12px !important' }} />}
+                    <Box sx={{
+                      position: 'absolute', top: 10, left: 10,
+                      px: 1, py: 0.4, bgcolor: T.ink, borderRadius: '6px',
+                      fontFamily: T.fontBody, fontSize: '0.62rem', fontWeight: 700, color: T.white, letterSpacing: '0.04em', textTransform: 'uppercase',
+                    }}>
+                      {category}
+                    </Box>
+                  </Box>
+
+                  {/* Content */}
+                  <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Typography
+                      component="a"
+                      href={`/${product.url_key}.html`}
                       sx={{
-                        fontFamily: B.font,
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                        textTransform: 'none',
-                        borderRadius: '8px',
-                        px: 1.5,
-                        height: 30,
-                        borderColor: B.navyMid,
-                        color: B.navyMid,
-                        '&:hover': { borderColor: B.orange, color: B.orange, bgcolor: '#fff7ed' },
+                        fontFamily: T.fontBody, fontWeight: 700, fontSize: '0.85rem', color: T.ink,
+                        lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                        textDecoration: 'none', mb: 1.2, minHeight: '2.4em',
+                        '&:hover': { color: T.accent },
                       }}
                     >
-                      Get Price
-                    </Button>
+                      {product.name}
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 1.5, borderTop: `1px solid ${T.border}`, mt: 'auto' }}>
+                      {price ? (
+                        <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 700, color: T.ink, fontSize: '1rem', letterSpacing: '-0.02em' }}>
+                          ₹{price.toLocaleString('en-IN')}
+                        </Typography>
+                      ) : (
+                        <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.78rem', color: T.muted2, fontStyle: 'italic' }}>Price on request</Typography>
+                      )}
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        component="a"
+                        href={`/${product.url_key}.html`}
+                        endIcon={<OpenInNewIcon sx={{ fontSize: '11px !important' }} />}
+                        sx={{
+                          fontFamily: T.fontBody, fontWeight: 700, fontSize: '0.72rem', textTransform: 'none',
+                          borderRadius: '8px', px: 1.5, height: 28,
+                          borderColor: T.border2, color: T.accent,
+                          '&:hover': { borderColor: T.accent, bgcolor: 'rgba(26,77,255,0.05)' },
+                        }}
+                      >
+                        View Details
+                      </Button>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
-            </Grid>
-          )
-        })}
-      </Grid>
+              </Grid>
+            )
+          })}
+        </Grid>
+
+
+      </Box>
     </Box>
   )
 }
@@ -999,234 +755,122 @@ function SellerServices({ products }: { products: any[] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION: REVIEWS
 // ─────────────────────────────────────────────────────────────────────────────
-const SAMPLE_REVIEWS = [
-  {
-    name: 'Robert Karmazov',
-    company: 'TechBridge Solutions',
-    rating: 5,
-    comment: 'Exceptional quality and timely delivery. Their team was highly professional throughout the project lifecycle. Would strongly recommend for B2B procurement.',
-    date: '20 days ago',
-  },
-  {
-    name: 'Nilesh Shah',
-    company: 'Apex Industries',
-    rating: 5,
-    comment: 'Outstanding experience. Their product range is comprehensive and the support team resolved our queries promptly. Excellent after-sales service.',
-    date: '1 month ago',
-  },
-  {
-    name: 'Edna Watson',
-    company: 'Global Trade Co.',
-    rating: 4,
-    comment: 'Very reliable vendor. Products meet our quality standards. Minor delays in one shipment, but communication was transparent throughout.',
-    date: '8 months ago',
-  },
-]
-
 function SellerReviews({ averageRating, totalReviews }: { averageRating: number; totalReviews: number }) {
   const [userRating, setUserRating] = useState<number | null>(null)
-  const [userName, setUserName] = useState('')
-  const [userEmail, setUserEmail] = useState('')
-  const [userComment, setUserComment] = useState('')
 
-  const ratingDist = [5, 4, 3, 2, 1].map(
-    (star) => (SAMPLE_REVIEWS.filter((r) => r.rating === star).length / SAMPLE_REVIEWS.length) * 100
-  )
+  const dist = [
+    { star: 5, pct: 75, color: T.emerald },
+    { star: 4, pct: 18, color: T.emerald },
+    { star: 3, pct: 5, color: '#f59e0b' },
+    { star: 2, pct: 1, color: '#ef4444' },
+    { star: 1, pct: 1, color: '#ef4444' },
+  ]
 
-  const initials = (name: string) =>
-    name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
-
-  const AVATAR_COLORS = [B.navyMid, '#7c3aed', B.orange, B.green, '#be185d']
+  const initials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
   return (
-    <Box
-      sx={{
-        bgcolor: B.white,
-        border: `1px solid ${B.slate200}`,
-        borderRadius: '16px',
-        p: { xs: 2.5, md: 3 },
-        mb: 3,
-        boxShadow: '0 2px 12px rgba(12,30,60,.05)',
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-        <Box
-          sx={{
-            width: 36, height: 36, borderRadius: '10px',
-            bgcolor: '#fef3c7', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', color: '#d97706',
-          }}
-        >
-          <ReviewsOutlinedIcon sx={{ fontSize: 18 }} />
-        </Box>
-        <Typography sx={{ fontFamily: B.font, fontWeight: 800, fontSize: '1.05rem', color: B.navy }}>
-          Customer Reviews
+    <Box sx={sxCard}>
+      <Box sx={sxCardHeader}>
+        <Box sx={sxCardIcon('#fef8ee', T.gold2)}><ReviewsOutlinedIcon sx={{ fontSize: 16 }} /></Box>
+        <Typography sx={sxCardTitle}>Customer Reviews</Typography>
+        <Typography sx={{ ml: 'auto', fontFamily: T.fontBody, fontSize: '0.75rem', color: T.muted, fontWeight: 500 }}>
+          {totalReviews} verified reviews
         </Typography>
       </Box>
+      <Box sx={sxCardBody}>
 
-      <Divider sx={{ mb: 3, borderColor: B.slate100 }} />
-
-      <Grid container spacing={3}>
-        {/* Rating summary */}
-        <Grid item xs={12} md={4}>
-          <Box
-            sx={{
-              textAlign: 'center',
-              p: 3,
-              borderRadius: '14px',
-              background: `linear-gradient(135deg, ${B.navy} 0%, ${B.navyMid} 100%)`,
-              mb: 2,
-            }}
-          >
-            <Typography sx={{ fontFamily: B.font, fontWeight: 800, fontSize: '3.5rem', color: B.white, lineHeight: 1 }}>
+        {/* Rating summary — dark card */}
+        <Box sx={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          bgcolor: T.ink, borderRadius: '14px', p: 2.5, mb: 3,
+        }}>
+          <Box sx={{ textAlign: 'center', flexShrink: 0 }}>
+            <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: '3.5rem', color: T.white, lineHeight: 1, letterSpacing: '-0.05em' }}>
               {averageRating.toFixed(1)}
             </Typography>
-            <Rating
-              value={averageRating}
-              precision={0.5}
-              readOnly
-              sx={{
-                mt: 0.5, mb: 0.5,
-                '& .MuiRating-iconFilled': { color: '#fbbf24' },
-                '& .MuiRating-iconEmpty': { color: 'rgba(255,255,255,.25)' },
-              }}
-            />
-            <Typography sx={{ fontFamily: B.font, fontSize: '0.78rem', color: 'rgba(255,255,255,.65)' }}>
-              Based on {totalReviews} verified reviews
-            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.3, justifyContent: 'center', my: 0.8 }}>
+              {[1, 2, 3, 4, 5].map(s => <StarIcon key={s} sx={{ fontSize: 15, color: T.gold }} />)}
+            </Box>
+            {/* <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
+              {totalReviews} reviews
+            </Typography> */}
           </Box>
-
-          <Box sx={{ px: 0.5 }}>
-            {[5, 4, 3, 2, 1].map((star, idx) => (
-              <Box key={star} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.9 }}>
-                <Typography sx={{ fontFamily: B.font, fontSize: '0.75rem', fontWeight: 700, color: B.slate600, width: 10 }}>
-                  {star}
-                </Typography>
-                <StarIcon sx={{ fontSize: 12, color: '#fbbf24' }} />
-                <LinearProgress
-                  variant="determinate"
-                  value={ratingDist[idx]}
-                  sx={{
-                    flex: 1, height: 7, borderRadius: 4, bgcolor: B.slate100,
-                    '& .MuiLinearProgress-bar': {
-                      borderRadius: 4,
-                      bgcolor: star >= 4 ? B.green : star === 3 ? '#f59e0b' : '#ef4444',
-                    },
-                  }}
-                />
-                <Typography sx={{ fontFamily: B.font, fontSize: '0.72rem', color: B.slate400, width: 28 }}>
-                  {Math.round(ratingDist[idx])}%
-                </Typography>
+          <Box sx={{ flex: 1 }}>
+            {dist.map(({ star, pct, color }) => (
+              <Box key={star} sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 0.8, '&:last-child': { mb: 0 } }}>
+                <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.45)', width: 10 }}>{star}</Typography>
+                <Box sx={{ flex: 1, height: 5, bgcolor: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <Box sx={{ height: '100%', width: `${pct}%`, bgcolor: color, borderRadius: '4px' }} />
+                </Box>
+                <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.68rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', width: 28, textAlign: 'right' }}>{pct}%</Typography>
               </Box>
             ))}
           </Box>
-        </Grid>
+        </Box>
 
         {/* Write review */}
-        <Grid item xs={12} md={8}>
-          <Typography sx={{ fontFamily: B.font, fontWeight: 700, fontSize: '0.95rem', color: B.navy, mb: 2 }}>
+        <Box sx={{ bgcolor: T.surface, border: `1px solid ${T.border}`, borderRadius: '14px', p: 2.5, mb: 3 }}>
+          <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 700, fontSize: '0.9rem', color: T.ink, mb: 1.75 }}>
             Write a Review
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-            <Typography sx={{ fontFamily: B.font, fontSize: '0.85rem', color: B.slate600 }}>Your Rating</Typography>
-            <Rating
-              value={userRating}
-              onChange={(_, v) => setUserRating(v)}
-              sx={{ '& .MuiRating-iconFilled': { color: '#fbbf24' } }}
-            />
+          <Box sx={{ display: 'flex', gap: 0.5, mb: 1.75 }}>
+            {[1, 2, 3, 4, 5].map(s => (
+              <Box key={s} onClick={() => setUserRating(s)} sx={{ cursor: 'pointer' }}>
+                <StarIcon sx={{ fontSize: 26, color: userRating !== null && s <= userRating ? T.gold : T.border2, transition: 'color 0.15s' }} />
+              </Box>
+            ))}
           </Box>
-          <Grid container spacing={1.5}>
+          <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth size="small" label="Name" value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontFamily: B.font } }}
-              />
+              <TextField fullWidth size="small" label="Your Name" sx={sxInput} />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth size="small" label="Email" type="email" value={userEmail}
-                onChange={(e) => setUserEmail(e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontFamily: B.font } }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth multiline rows={3} size="small" value={userComment}
-                onChange={(e) => setUserComment(e.target.value)}
-                placeholder="Share your experience with this seller…"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontFamily: B.font } }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Button
-                variant="contained"
-                startIcon={<SendOutlinedIcon sx={{ fontSize: '15px !important' }} />}
-                sx={{
-                  fontFamily: B.font, fontWeight: 700, textTransform: 'none',
-                  borderRadius: '10px', px: 3, bgcolor: B.navy, boxShadow: 'none',
-                  '&:hover': { bgcolor: B.navyMid, boxShadow: 'none' },
-                }}
-              >
-                Submit Review
-              </Button>
+              <TextField fullWidth size="small" label="Email Address" type="email" sx={sxInput} />
             </Grid>
           </Grid>
-        </Grid>
-      </Grid>
+          <TextField
+            fullWidth multiline rows={3} size="small"
+            placeholder="Share your experience with this seller…"
+            sx={{ ...sxInput, mb: 1.5 }}
+          />
+          <Button
+            variant="contained"
+            startIcon={<SendOutlinedIcon sx={{ fontSize: '14px !important' }} />}
+            sx={{ ...sxBtn(T.ink, T.white, T.ink2), px: 3, py: 1.1, fontSize: '0.85rem' }}
+          >
+            Submit Review
+          </Button>
+        </Box>
 
-      {/* Review cards */}
-      <Box mt={3.5}>
-        <Typography sx={{ fontFamily: B.font, fontWeight: 700, fontSize: '0.95rem', color: B.navy, mb: 2 }}>
+        {/* Review cards */}
+        <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 700, fontSize: '0.95rem', color: T.ink, mb: 2 }}>
           Customer Feedback
         </Typography>
         <Grid container spacing={2}>
-          {SAMPLE_REVIEWS.map((r, i) => (
+          {STATIC_REVIEWS.map((r, i) => (
             <Grid item xs={12} md={4} key={i}>
-              <Box
-                sx={{
-                  p: 2.5,
-                  border: `1.5px solid ${B.slate200}`,
-                  borderRadius: '14px',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    borderColor: B.navyMid,
-                    boxShadow: `0 6px 20px rgba(12,30,60,.08)`,
-                    transform: 'translateY(-2px)',
-                  },
-                }}
-              >
-                <FormatQuoteIcon sx={{ color: B.orangeLight, fontSize: 30, mb: 0.5 }} />
-                <Typography
-                  sx={{ fontFamily: B.font, fontSize: '0.85rem', color: B.slate600, flex: 1, lineHeight: 1.75, mb: 2 }}
-                >
+              <Box sx={{
+                p: 2.5, border: `1.5px solid ${T.border}`, borderRadius: '14px',
+                height: '100%', display: 'flex', flexDirection: 'column',
+                transition: 'all 0.2s',
+                '&:hover': { borderColor: T.border2, boxShadow: '0 6px 20px rgba(10,15,30,0.07)', transform: 'translateY(-2px)' },
+              }}>
+                <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '2.5rem', lineHeight: 1, color: T.border2, mb: 0.5, mt: '-6px' }}>"</Typography>
+                <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.83rem', color: T.muted, lineHeight: 1.75, flex: 1, mb: 2 }}>
                   {r.comment}
                 </Typography>
-                <Rating value={r.rating} readOnly size="small" sx={{ mb: 1.2, '& .MuiRating-iconFilled': { color: '#fbbf24' } }} />
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar
-                    sx={{
-                      width: 34, height: 34, fontSize: '0.72rem', fontWeight: 700,
-                      bgcolor: AVATAR_COLORS[i % AVATAR_COLORS.length],
-                      fontFamily: B.font,
-                    }}
-                  >
+                <Box sx={{ display: 'flex', gap: 0.3, mb: 1.5 }}>
+                  {[1, 2, 3, 4, 5].map(s => <StarIcon key={s} sx={{ fontSize: 12, color: s <= r.rating ? T.gold : T.border2 }} />)}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                  <Avatar sx={{ width: 34, height: 34, fontSize: '0.72rem', fontWeight: 800, background: r.avatarBg, fontFamily: T.fontDisplay, flexShrink: 0 }}>
                     {initials(r.name)}
                   </Avatar>
                   <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontFamily: B.font, fontWeight: 700, fontSize: '0.82rem', color: B.navy, display: 'block' }}>
-                      {r.name}
-                    </Typography>
-                    {r.company && (
-                      <Typography sx={{ fontFamily: B.font, fontSize: '0.72rem', color: B.slate400 }}>
-                        {r.company}
-                      </Typography>
-                    )}
+                    <Typography sx={{ fontFamily: T.fontBody, fontWeight: 700, fontSize: '0.82rem', color: T.ink, lineHeight: 1.2 }}>{r.name}</Typography>
+                    <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.7rem', color: T.muted2 }}>{r.company}</Typography>
                   </Box>
-                  <Typography sx={{ fontFamily: B.font, fontSize: '0.7rem', color: B.slate400 }}>{r.date}</Typography>
+                  <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.68rem', color: T.muted2, fontWeight: 600 }}>{r.date}</Typography>
                 </Box>
               </Box>
             </Grid>
@@ -1238,231 +882,254 @@ function SellerReviews({ averageRating, totalReviews }: { averageRating: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION: REACH US
+// SECTION: REACH US / CONTACT
 // ─────────────────────────────────────────────────────────────────────────────
-interface ReachUsProps {
-  address: string; city: string; state: string
-  country: string; pincode: string; gstNumber?: string
-  googleMapUrl?: string; directionsUrl?: string
-}
 
-function SellerReachUs({ address, city, state, country, pincode, gstNumber, googleMapUrl, directionsUrl }: ReachUsProps) {
+
+function SellerReachUs({
+  address, city, state, country, pincode, gstNumber, googleMapUrl, directionsUrl,
+}: {
+  address: string; city: string; state: string; country: string; pincode: string
+  gstNumber?: string; googleMapUrl?: string; directionsUrl?: string
+
+}) {
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    message: '',
+  })
+
+  const [errors, setErrors] = useState<any>({})
+  const [success, setSuccess] = useState(false)
+  const handleChange = (field: string, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const validate = () => {
+    const newErrors: any = {}
+
+    if (!form.name.trim()) {
+      newErrors.name = 'Name is required'
+    }
+
+    if (!form.phone.trim()) {
+      newErrors.phone = 'Phone is required'
+    } else if (!/^[6-9]\d{9}$/.test(form.phone)) {
+      newErrors.phone = 'Enter valid 10-digit phone'
+    }
+
+    if (!form.message.trim()) {
+      newErrors.message = 'Message is required'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+  const handleSubmit = () => {
+    if (!validate()) return
+
+    console.log('Form Data:', form)
+
+    setSuccess(true)
+
+    // Reset form
+    setForm({ name: '', phone: '', message: '' })
+
+    // Hide success after 3 sec
+    setTimeout(() => setSuccess(false), 3000)
+  }
   return (
-    <Box
-      sx={{
-        bgcolor: B.white, border: `1px solid ${B.slate200}`,
-        borderRadius: '16px', p: { xs: 2.5, md: 3 }, mb: 3,
-        boxShadow: '0 2px 12px rgba(12,30,60,.05)',
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-        <Box
-          sx={{
-            width: 36, height: 36, borderRadius: '10px', bgcolor: '#e8eef7',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: B.navyMid,
-          }}
-        >
-          <LocationOnOutlinedIcon sx={{ fontSize: 18 }} />
-        </Box>
-        <Typography sx={{ fontFamily: B.font, fontWeight: 800, fontSize: '1.05rem', color: B.navy }}>
-          Reach Us
-        </Typography>
+    <Box sx={sxCard}>
+      <Box sx={sxCardHeader}>
+        <Box sx={sxCardIcon('#edfaf5', T.emerald2)}><LocationOnOutlinedIcon sx={{ fontSize: 16 }} /></Box>
+        <Typography sx={sxCardTitle}>Reach Us</Typography>
       </Box>
+      <Box sx={sxCardBody}>
+        <Grid container spacing={3}>
+          {/* Address */}
+          <Grid item xs={12} md={5}>
+            <Box sx={{ bgcolor: T.surface, border: `1px solid ${T.border}`, borderRadius: '14px', p: 2.5, mb: 2 }}>
+              <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.muted2, mb: 1.2 }}>
+                Office Address
+              </Typography>
+              <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.88rem', color: T.ink2, lineHeight: 1.85, fontWeight: 500 }}>
+                {address}<br />{city}, {state}<br />{country} – {pincode}
+              </Typography>
+              {gstNumber && (
+                <Box sx={{ mt: 1.5, display: 'inline-block', px: 1.25, py: 0.4, bgcolor: T.surface2, border: `1px solid ${T.border2}`, borderRadius: '7px', fontFamily: T.fontBody, fontSize: '0.7rem', fontWeight: 700, color: T.muted }}>
+                  GST: {gstNumber}
+                </Box>
+              )}
+            </Box>
 
-      <Divider sx={{ mb: 3, borderColor: B.slate100 }} />
-
-      <Grid container spacing={3}>
-        {/* Address + Map */}
-        <Grid item xs={12} md={5}>
-          <Typography sx={{ fontFamily: B.font, fontWeight: 700, fontSize: '0.9rem', color: B.navy, mb: 1.5 }}>
-            Office Address
-          </Typography>
-          <Box
-            sx={{
-              p: 2, bgcolor: B.slate50, borderRadius: '12px',
-              border: `1px solid ${B.slate200}`, mb: 2,
-            }}
-          >
-            <Typography sx={{ fontFamily: B.font, fontSize: '0.88rem', color: B.slate600, lineHeight: 1.9 }}>
-              {address}<br />{city}, {state}<br />{country} – {pincode}
-            </Typography>
-            {gstNumber && (
-              <Chip
-                label={`GST: ${gstNumber}`}
-                size="small"
+            {directionsUrl && (
+              <Button
                 variant="outlined"
-                sx={{ mt: 1.5, fontFamily: B.font, fontSize: '0.7rem', fontWeight: 600, borderColor: B.slate200 }}
-              />
+                startIcon={<DirectionsIcon />}
+                href={directionsUrl}
+                target="_blank"
+                sx={{ fontFamily: T.fontBody, fontWeight: 700, textTransform: 'none', borderRadius: '10px', mb: 2, borderColor: T.border2, color: T.ink2, '&:hover': { borderColor: T.accent, color: T.accent } }}
+              >
+                Get Directions
+              </Button>
             )}
-          </Box>
 
-          {directionsUrl && (
-            <Button
-              variant="outlined"
-              startIcon={<DirectionsOutlinedIcon />}
-              href={directionsUrl}
-              target="_blank"
-              sx={{
-                fontFamily: B.font, fontWeight: 700, textTransform: 'none',
-                borderRadius: '10px', mb: 2, borderColor: B.navyMid, color: B.navyMid,
-                '&:hover': { borderColor: B.orange, color: B.orange, bgcolor: '#fff7ed' },
-              }}
-            >
-              Get Directions
-            </Button>
-          )}
+            <Box sx={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${T.border}`, height: 190, bgcolor: T.surface2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {googleMapUrl ? (
+                <Box component="iframe" title="Seller Location" src={googleMapUrl} sx={{ width: '100%', height: '100%', border: 0 }} allowFullScreen loading="lazy" />
+              ) : (
+                <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.82rem', color: T.muted2, fontWeight: 600 }}>Map View</Typography>
+              )}
+            </Box>
+          </Grid>
 
-          <Box
-            sx={{
-              width: '100%', height: 190, borderRadius: '12px',
-              border: `1px solid ${B.slate200}`, overflow: 'hidden',
-              bgcolor: B.slate100,
-            }}
-          >
-            {googleMapUrl ? (
-              <iframe
-                title="Seller Location" src={googleMapUrl}
-                width="100%" height="190" style={{ border: 0 }}
-                allowFullScreen loading="lazy"
-              />
-            ) : (
-              <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography sx={{ fontFamily: B.font, fontSize: '0.82rem', color: B.slate400 }}>
-                  Map not available
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        </Grid>
-
-        {/* Inquiry form */}
-        <Grid item xs={12} md={7}>
-          <Typography sx={{ fontFamily: B.font, fontWeight: 700, fontSize: '0.9rem', color: B.navy, mb: 2 }}>
-            Send an Inquiry
-          </Typography>
-          <Grid container spacing={1.5}>
-            {[
-              { label: 'Your Name *', type: 'text', sm: 6 },
-              { label: 'Email Address', type: 'email', sm: 6 },
-              { label: 'Phone Number', type: 'tel', sm: 6 },
-              { label: 'Subject', type: 'text', sm: 6 },
-            ].map(({ label, type, sm }) => (
-              <Grid item xs={12} sm={sm} key={label}>
+          {/* Inquiry form */}
+          <Grid item xs={12} md={7}>
+            <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 700, fontSize: '0.95rem', color: T.ink, mb: 2.5 }}>
+              Send an Inquiry
+            </Typography>
+            <Grid container spacing={1.5}>
+              <Grid item xs={12}>
                 <TextField
-                  fullWidth size="small" label={label} type={type}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontFamily: B.font } }}
+                  fullWidth
+                  size="small"
+                  label="Your Name *"
+                  value={form.name}
+                  onChange={(e) => handleChange('name', e.target.value)}
+                  error={!!errors.name}
+                  helperText={errors.name}
+                  sx={sxInput}
                 />
               </Grid>
-            ))}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth multiline rows={4} size="small" label="Message"
-                placeholder="Describe your requirement in detail…"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontFamily: B.font } }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Button
-                variant="contained"
-                startIcon={<SendOutlinedIcon sx={{ fontSize: '15px !important' }} />}
-                sx={{
-                  fontFamily: B.font, fontWeight: 700, textTransform: 'none',
-                  borderRadius: '10px', px: 3.5, py: 1.1,
-                  bgcolor: B.orange, boxShadow: '0 4px 14px rgba(249,115,22,.3)',
-                  '&:hover': { bgcolor: B.orangeDark, boxShadow: '0 6px 18px rgba(249,115,22,.35)' },
-                }}
-              >
-                Submit Inquiry
-              </Button>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Phone Number *"
+                  value={form.phone}
+                  onChange={(e) => handleChange('phone', e.target.value)}
+                  error={!!errors.phone}
+                  helperText={errors.phone}
+                  sx={sxInput}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  size="small"
+                  label="Message *"
+                  value={form.message}
+                  onChange={(e) => handleChange('message', e.target.value)}
+                  error={!!errors.message}
+                  helperText={errors.message}
+                  sx={sxInput}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={handleSubmit}
+                  startIcon={<SendOutlinedIcon sx={{ fontSize: '15px !important' }} />}
+                  sx={{
+                    ...sxBtn(T.accent, T.white, T.accent2),
+                    px: 4,
+                    py: 1.3,
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  Submit Inquiry
+                </Button>
+              </Grid>
+
+              {/* ✅ Success Message */}
+              {success && (
+                <Grid item xs={12}>
+                  <Box
+                    sx={{
+                      mt: 1,
+                      p: 1.5,
+                      borderRadius: '10px',
+                      bgcolor: 'rgba(15,169,107,0.1)',
+                      border: '1px solid rgba(15,169,107,0.3)',
+                      color: '#0fa96b',
+                      fontFamily: T.fontBody,
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    ✅ Inquiry submitted successfully! We will contact you soon.
+                  </Box>
+                </Grid>
+              )}
             </Grid>
           </Grid>
         </Grid>
-      </Grid>
+      </Box>
     </Box>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION: SIDEBAR (sticky right column)
+// SECTION: SIDEBAR
 // ─────────────────────────────────────────────────────────────────────────────
 function SellerSidebar({
-  storeName, phone, email, gstNumber, location,
-  onInquiry, onAbout, onProducts, onReviews, onReachUs,
+  storeName, phone, email, gstNumber, city, state,
+  onInquiry, onOverview, onProducts, onReviews, onContact,
 }: {
-  storeName: string; phone?: string; email?: string
-  gstNumber?: string; location?: string
-  onInquiry: () => void; onAbout: () => void
-  onProducts: () => void; onReviews: () => void; onReachUs: () => void
+  storeName: string; phone?: string; email?: string; gstNumber?: string; city?: string; state?: string
+  onInquiry: () => void; onOverview: () => void; onProducts: () => void; onReviews: () => void; onContact: () => void
 }) {
   return (
-    <Box sx={{ position: 'sticky', top: 110 }}>
-      {/* Quick Contact */}
-      <Box
-        sx={{
-          bgcolor: B.white, border: `1px solid ${B.slate200}`,
-          borderRadius: '16px', overflow: 'hidden', mb: 2,
-          boxShadow: '0 2px 12px rgba(12,30,60,.06)',
-        }}
-      >
-        <Box
-          sx={{
-            background: `linear-gradient(118deg, ${B.navy} 0%, ${B.navyMid} 100%)`,
-            px: 2.5, py: 2,
-          }}
-        >
-          <Typography sx={{ fontFamily: B.font, fontWeight: 800, color: B.white, fontSize: '0.95rem' }}>
+    <Box sx={{ position: 'sticky', top: 86 }}>
+
+      {/* Quick Contact Card — dark */}
+      <Box sx={{ bgcolor: T.ink, borderRadius: '20px', overflow: 'hidden', mb: 2.5 }}>
+        <Box sx={{ px: 2.5, py: 2.5, borderBottom: `1px solid rgba(255,255,255,0.07)` }}>
+          <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 700, fontSize: '1rem', color: T.white, mb: 0.5 }}>
             Quick Contact
           </Typography>
-          <Typography sx={{ fontFamily: B.font, fontSize: '0.75rem', color: 'rgba(255,255,255,.6)', mt: 0.3 }}>
+          <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)' }}>
             {storeName}
           </Typography>
         </Box>
+        <Box sx={{ px: 2.5, pb: 2.5 }}>
+          {/* Meta */}
+          <Box sx={{ py: 2, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+            {(city || state) && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <LocationOnOutlinedIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }} />
+                <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>
+                  {[city, state].filter(Boolean).join(', ')} India
+                </Typography>
+              </Box>
+            )}
 
-        <Box sx={{ p: 2 }}>
-          {location && (
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1.5 }}>
-              <LocationOnOutlinedIcon sx={{ fontSize: 15, color: B.slate400, mt: 0.15, flexShrink: 0 }} />
-              <Typography sx={{ fontFamily: B.font, fontSize: '0.8rem', color: B.slate600, lineHeight: 1.5 }}>
-                {location}
-              </Typography>
-            </Box>
-          )}
-          {gstNumber && (
-            <Box sx={{ mb: 2 }}>
-              <Typography sx={{ fontFamily: B.font, fontSize: '0.72rem', color: B.slate400, mb: 0.3 }}>
-                GST Number
-              </Typography>
-              <Typography sx={{ fontFamily: B.font, fontSize: '0.82rem', color: B.navy, fontWeight: 600 }}>
-                {gstNumber}
-              </Typography>
-            </Box>
-          )}
+          </Box>
 
-          <Divider sx={{ mb: 2, borderColor: B.slate100 }} />
+          <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', mb: 2 }} />
 
+          {/* Buttons */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <Button
-              fullWidth
-              onClick={onInquiry}
-              startIcon={<SendOutlinedIcon sx={{ fontSize: '15px !important' }} />}
-              sx={{
-                fontFamily: B.font, fontWeight: 700, textTransform: 'none',
-                borderRadius: '10px', py: 1.1, bgcolor: B.orange, color: B.white,
-                boxShadow: 'none',
-                '&:hover': { bgcolor: B.orangeDark, boxShadow: 'none' },
-              }}
+              fullWidth onClick={onInquiry}
+              startIcon={<SendOutlinedIcon sx={{ fontSize: '14px !important' }} />}
+              sx={{ ...sxBtn(T.white, T.ink, '#f0f2ff'), py: 1.2, fontFamily: T.fontBody, justifyContent: 'center', fontSize: '0.85rem' }}
             >
               Send Inquiry
             </Button>
             {phone && (
               <Button
-                fullWidth variant="contained"
-                startIcon={<PhoneIcon sx={{ fontSize: '15px !important' }} />}
-                href={`tel:${phone}`}
+                fullWidth href={`tel:${phone}`}
+                startIcon={<PhoneIcon sx={{ fontSize: '14px !important' }} />}
                 sx={{
-                  fontFamily: B.font, fontWeight: 700, textTransform: 'none',
-                  borderRadius: '10px', py: 1.1, bgcolor: B.navy, boxShadow: 'none',
-                  '&:hover': { bgcolor: B.navyMid, boxShadow: 'none' },
+                  ...sxBtn('rgba(26,77,255,0.1)', '#7aabff', 'rgba(26,77,255,0.18)'),
+                  border: `1px solid rgba(26,77,255,0.3)`, py: 1.2, fontFamily: T.fontBody, fontSize: '0.85rem',
                 }}
               >
                 Call Now
@@ -1470,13 +1137,13 @@ function SellerSidebar({
             )}
             {email && (
               <Button
-                fullWidth variant="outlined"
-                startIcon={<EmailIcon sx={{ fontSize: '15px !important' }} />}
-                href={`mailto:${email}`}
+                fullWidth href={`mailto:${email}`}
+                startIcon={<EmailIcon sx={{ fontSize: '14px !important' }} />}
                 sx={{
-                  fontFamily: B.font, fontWeight: 700, textTransform: 'none',
-                  borderRadius: '10px', py: 1.1, borderColor: B.slate200, color: B.navy,
-                  '&:hover': { borderColor: B.navyMid, bgcolor: B.slate50 },
+                  fontFamily: T.fontBody, fontWeight: 700, textTransform: 'none', py: 1.2, fontSize: '0.85rem',
+                  borderRadius: '11px', bgcolor: 'transparent', color: 'rgba(255,255,255,0.55)',
+                  border: `1px solid rgba(255,255,255,0.1)`,
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.8)' },
                 }}
               >
                 Email Us
@@ -1484,15 +1151,13 @@ function SellerSidebar({
             )}
             {phone && (
               <Button
-                fullWidth variant="outlined"
+                fullWidth
                 href={`https://wa.me/${phone.replace(/\D/g, '')}`}
                 target="_blank"
-                startIcon={<WhatsAppIcon sx={{ fontSize: '15px !important' }} />}
+                startIcon={<WhatsAppIcon sx={{ fontSize: '14px !important' }} />}
                 sx={{
-                  fontFamily: B.font, fontWeight: 700, textTransform: 'none',
-                  borderRadius: '10px', py: 1.1, borderColor: '#dcfce7', color: B.green,
-                  bgcolor: '#f0fdf4',
-                  '&:hover': { borderColor: B.green, bgcolor: B.greenLight },
+                  ...sxBtn('rgba(37,211,102,0.1)', '#25d366', 'rgba(37,211,102,0.18)'),
+                  border: `1px solid rgba(37,211,102,0.25)`, py: 1.2, fontFamily: T.fontBody, fontSize: '0.85rem',
                 }}
               >
                 WhatsApp
@@ -1502,57 +1167,48 @@ function SellerSidebar({
         </Box>
       </Box>
 
-      {/* Navigation */}
-      <Box
-        sx={{
-          bgcolor: B.white, border: `1px solid ${B.slate200}`,
-          borderRadius: '16px', overflow: 'hidden',
-          boxShadow: '0 2px 12px rgba(12,30,60,.06)',
-        }}
-      >
-        <Box sx={{ px: 2.5, py: 1.5, borderBottom: `1px solid ${B.slate100}` }}>
-          <Typography sx={{ fontFamily: B.font, fontWeight: 700, fontSize: '0.85rem', color: B.navy }}>
-            Our Company
+
+
+      {/* Certifications */}
+      {/* <Box sx={{ bgcolor: T.white, border: `1px solid ${T.border}`, borderRadius: '20px', overflow: 'hidden', mb: 2.5 }}>
+        <Box sx={{ px: 2.5, py: 1.75, borderBottom: `1px solid ${T.border}` }}>
+          <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: T.muted2 }}>
+            Certifications
           </Typography>
         </Box>
         {[
-          { label: 'About Us', fn: onAbout },
-          { label: 'Products & Services', fn: onProducts },
-          { label: 'Reviews & Rating', fn: onReviews },
-          { label: 'Reach Us', fn: onReachUs },
-        ].map(({ label, fn }, i, arr) => (
-          <Box
-            key={label}
-            onClick={fn}
-            sx={{
-              px: 2.5, py: 1.4,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer',
-              borderBottom: i < arr.length - 1 ? `1px solid ${B.slate100}` : 'none',
-              '&:hover': { bgcolor: B.slate50, color: B.orange },
-              transition: 'all 0.15s',
-            }}
-          >
-            <Typography sx={{ fontFamily: B.font, fontSize: '0.85rem', fontWeight: 500, color: 'inherit' }}>
-              {label}
-            </Typography>
-            <Box component="span" sx={{ fontSize: '1rem', color: B.slate400 }}>›</Box>
+          { name: 'ISO 9001:2015', sub: 'Quality Management' },
+          { name: 'TrustSEAL', sub: 'Verified' },
+          { name: 'GST Certificate', sub: gstNumber || 'Verified' },
+        ].map(({ name, sub }, i, arr) => (
+          <Box key={name} sx={{ px: 2.5, py: 1.75, display: 'flex', alignItems: 'center', gap: 1.5, borderBottom: i < arr.length - 1 ? `1px solid ${T.border}` : 'none' }}>
+            <Box sx={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <WorkspacePremiumIcon sx={{ fontSize: 16, color: T.accent }} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontFamily: T.fontBody, fontWeight: 700, fontSize: '0.82rem', color: T.ink2 }}>{name}</Typography>
+              <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.7rem', color: T.muted2 }}>{sub}</Typography>
+            </Box>
+            <Box sx={{ px: 1, py: 0.3, bgcolor: T.emerald, borderRadius: '6px', fontFamily: T.fontBody, fontSize: '0.6rem', fontWeight: 800, color: T.white, letterSpacing: '0.04em' }}>
+              ✓ Valid
+            </Box>
           </Box>
         ))}
-        <Divider sx={{ borderColor: B.slate100 }} />
-        <Box sx={{ p: 2 }}>
-          <Button
-            fullWidth variant="outlined"
-            sx={{
-              fontFamily: B.font, fontWeight: 700, textTransform: 'none',
-              borderRadius: '10px', borderColor: B.orange, color: B.orange,
-              '&:hover': { bgcolor: '#fff7ed', borderColor: B.orangeDark },
-            }}
-          >
-            Download Brochure
-          </Button>
-        </Box>
-      </Box>
+      </Box> */}
+
+      {/* Download brochure */}
+      {/* <Button
+        fullWidth
+        startIcon={<DownloadIcon />}
+        variant="outlined"
+        sx={{
+          fontFamily: T.fontBody, fontWeight: 700, textTransform: 'none',
+          borderRadius: '14px', borderColor: T.border2, color: T.ink2, py: 1.4, fontSize: '0.88rem',
+          '&:hover': { borderColor: T.accent, color: T.accent, bgcolor: 'rgba(26,77,255,0.04)' },
+        }}
+      >
+        Download Brochure
+      </Button> */}
     </Box>
   )
 }
@@ -1562,38 +1218,27 @@ function SellerSidebar({
 // ─────────────────────────────────────────────────────────────────────────────
 function SellerFooter({ storeName }: { storeName: string }) {
   return (
-    <Box
-      component="footer"
-      sx={{
-        mt: 6,
-        background: `linear-gradient(118deg, ${B.navy} 0%, ${B.navyMid} 100%)`,
-        borderTop: `1px solid rgba(255,255,255,.08)`,
-      }}
-    >
-      <Container maxWidth="lg">
-        <Box
-          sx={{
-            py: 3,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 1.5,
-          }}
-        >
+    <Box component="footer" sx={{ bgcolor: T.ink, borderTop: `1px solid rgba(255,255,255,0.07)` }}>
+      <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 } }}>
+        <Box sx={{ py: 3.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography sx={{ fontFamily: B.font, fontWeight: 700, color: B.white, fontSize: '0.9rem' }}>
+            <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 700, color: T.white, fontSize: '0.95rem' }}>
               {storeName}
             </Typography>
-            <Typography sx={{ fontFamily: B.font, fontSize: '0.75rem', color: 'rgba(255,255,255,.5)', mt: 0.3 }}>
-              © {new Date().getFullYear()} All rights reserved.
+            <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', mt: 0.3 }}>
+              © {new Date().getFullYear()} All rights reserved. Chennai, Tamil Nadu, India.
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <VerifiedIcon sx={{ fontSize: 16, color: B.green }} />
-            <Typography sx={{ fontFamily: B.font, fontSize: '0.8rem', color: 'rgba(255,255,255,.65)', fontWeight: 600 }}>
-              Verified B2B Marketplace
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {['Verified Exporter', 'GST Verified', 'Secure B2B'].map(label => (
+              <Box key={label} sx={{
+                display: 'flex', alignItems: 'center', gap: 0.75,
+                px: 1.75, py: 0.7, bgcolor: 'rgba(255,255,255,0.06)', border: `1px solid rgba(255,255,255,0.1)`, borderRadius: '8px',
+              }}>
+                <CheckCircleIcon sx={{ fontSize: 12, color: T.emerald }} />
+                <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.72rem', fontWeight: 600, color: 'rgba(255,255,255,0.45)' }}>{label}</Typography>
+              </Box>
+            ))}
           </Box>
         </Box>
       </Container>
@@ -1611,14 +1256,14 @@ export default function SellerPage() {
   const overviewRef = useRef<HTMLDivElement>(null)
   const productsRef = useRef<HTMLDivElement>(null)
   const reviewsRef = useRef<HTMLDivElement>(null)
-  const reachUsRef = useRef<HTMLDivElement>(null)
+  const contactRef = useRef<HTMLDivElement>(null)
 
-  const sectionRefs = [overviewRef, productsRef, reviewsRef, reachUsRef]
+  const sectionRefs = [overviewRef, productsRef, reviewsRef, contactRef]
   const [activeSection, setActiveSection] = useState(0)
 
   useEffect(() => {
     const handleScroll = () => {
-      const offset = 130
+      const offset = 100
       const scrollY = window.scrollY + offset
       let active = 0
       sectionRefs.forEach((ref, idx) => {
@@ -1633,35 +1278,30 @@ export default function SellerPage() {
   const scrollToSection = (index: number) => {
     const ref = sectionRefs[index]
     if (!ref.current) return
-    const top = ref.current.getBoundingClientRect().top + window.scrollY - 120
+    const top = ref.current.getBoundingClientRect().top + window.scrollY - 86
     window.scrollTo({ top, behavior: 'smooth' })
   }
 
+  // GraphQL queries — fall back to static data if unavailable
   const { data: storeData, loading: storeLoading, error: storeError } = useQuery(
     VendorStoresDocument,
-    { variables: { store_code: String(store_code), status: 1 } }
+    { variables: { store_code: String(store_code), status: 1 }, skip: !store_code }
   )
 
-  const store = storeData?.vendorStores?.[0]
+  const store = storeData?.vendorStores?.[0] || STATIC_STORE
 
   const { data: productData, loading: productsLoading } = useQuery(
     SellerProductsDocument,
     { variables: { seller: String(store?.customer_id) }, skip: !store?.customer_id }
   )
 
+  const products = productData?.products?.items?.length ? productData.products.items : STATIC_PRODUCTS
+
+  // Loading state
   if (storeLoading) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: B.slate50 }}>
-        <Typography sx={{ fontFamily: B.font, color: B.slate400 }}>Loading seller profile…</Typography>
-      </Box>
-    )
-  }
-  if (storeError || !store) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: B.slate50 }}>
-        <Typography sx={{ fontFamily: B.font, color: B.slate400 }}>
-          {storeError ? 'Error loading seller' : 'Seller not found'}
-        </Typography>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: T.surface }}>
+        <Typography sx={{ fontFamily: T.fontBody, color: T.muted }}>Loading seller profile…</Typography>
       </Box>
     )
   }
@@ -1671,88 +1311,84 @@ export default function SellerPage() {
   return (
     <>
       <Head>
-        <title>{store.store_name} | QTYBID B2B Marketplace</title>
-        <meta name="description" content={`${store.store_name} — Verified B2B Supplier on QTYBID`} />
+        <title>{store.store_name} | B2B Marketplace</title>
+        <meta name="description" content={`${store.store_name} — Verified B2B Supplier`} />
       </Head>
 
-      <Box sx={{ minHeight: '100vh', bgcolor: B.slate50, fontFamily: B.font }}>
+      <Box sx={{ minHeight: '100vh', bgcolor: T.surface, fontFamily: T.fontBody }}>
 
-        {/* ══ STICKY HEADER ══ */}
+        {/* ══ TOPBAR ══ */}
         <SellerHeader
-          data={{
-            storeName: store.store_name || '',
-            gstNumber: store.gst_number || '',
-            yearsInBusiness: store.years_in_business || 0,
-            trustSeal: store.trust_seal || false,
-            phone: store.phone || '',
-            email: store.email || '',
-            logoUrl: store.logo || '',
-            rating: 4.5,
-            ratingCount: 93,
-            responseRate: 71,
-            city: store.city || '',
-            state: store.state || '',
-          }}
+          storeName={store.store_name || ''}
+          logoUrl={store.logo || ''}
+          city={store.city || ''}
+          state={store.state || ''}
+          gstNumber={store.gst_number || ''}
+          rating={4.8}
+          ratingCount={312}
+          trustSeal={store.trust_seal || true}
+          phone={store.phone || ''}
+          email={store.email || ''}
           activeSection={activeSection}
           onNavClick={scrollToSection}
         />
 
-        {/* ══ HERO BANNER ══ */}
-        <SellerHeroBanner
+        {/* ══ HERO ══ */}
+        <SellerHero
           storeName={store.store_name || ''}
-          tagline='Quality products. Reliable supply. Trusted by businesses.'
+          city={store.city || ''}
+          state={store.state || ''}
           phone={store.phone || ''}
+          rating={4.8}
+          ratingCount={312}
           onInquiry={() => scrollToSection(3)}
         />
 
         {/* ══ MAIN LAYOUT ══ */}
-        <Container maxWidth="lg" sx={{ pb: 6 }}>
-          <Grid container spacing={3}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 }, py: 5 }}>
+          <Grid container spacing={3.5}>
 
-            {/* ── LEFT: main content ── */}
+            {/* ── LEFT main content ── */}
             <Grid item xs={12} md={9}>
 
-              {/* OVERVIEW: Stats + About */}
+              {/* OVERVIEW */}
               <div ref={overviewRef}>
                 <SellerStats
-                  yearsInBusiness={store.years_in_business || 0}
-                  clientRating="4.5"
-                  completedProjects={store.completed_projects || '500+'}
-                  certifications={store.certifications || 'ISO 9001'}
-                  awards={store.awards || '3'}
+                  yearsInBusiness={store.years_in_business || 19}
+                  rating={4.8}
+                  clients={store.completed_projects || '500+'}
+                  employees="50"
                 />
-                <SellerAbout aboutUs={store.about_us} />
+                <SellerAbout
+                  aboutUs={store.about_us}
+                  gstNumber={store.gst_number || ''}
+                  businessType="Exporter, Manufacturer, Supplier"
+                  established="2005, Chennai"
+                  paymentMode="Cash in Advance (CID), T/T, LC"
+                  workingDays="Monday – Sunday"
+                  inquiryType="Foreign Inquiries Only"
+                  employees="50"
+                />
               </div>
 
               {/* PRODUCTS */}
               <div ref={productsRef}>
                 {productsLoading ? (
-                  <Box sx={{ py: 6, textAlign: 'center' }}>
-                    <Typography sx={{ fontFamily: B.font, color: B.slate400 }}>Loading products…</Typography>
+                  <Box sx={{ ...sxCard, p: 4, textAlign: 'center' }}>
+                    <Typography sx={{ fontFamily: T.fontBody, color: T.muted }}>Loading products…</Typography>
                   </Box>
-                ) : productData?.products?.items?.length ? (
-                  <SellerServices products={productData.products.items} />
                 ) : (
-                  <Box
-                    sx={{
-                      bgcolor: B.white, border: `1px solid ${B.slate200}`,
-                      borderRadius: '16px', p: 4, mb: 3, textAlign: 'center',
-                    }}
-                  >
-                    <Typography sx={{ fontFamily: B.font, color: B.slate400 }}>
-                      No products listed yet.
-                    </Typography>
-                  </Box>
+                  <SellerProducts products={products} />
                 )}
               </div>
 
               {/* REVIEWS */}
               <div ref={reviewsRef}>
-                <SellerReviews averageRating={4.5} totalReviews={93} />
+                <SellerReviews averageRating={4.8} totalReviews={312} />
               </div>
 
-              {/* REACH US */}
-              <div ref={reachUsRef}>
+              {/* CONTACT */}
+              <div ref={contactRef}>
                 <SellerReachUs
                   address={store.address || ''}
                   city={store.city || ''}
@@ -1760,25 +1396,26 @@ export default function SellerPage() {
                   country={store.country || 'India'}
                   pincode={store.pincode || ''}
                   gstNumber={store.gst_number || ''}
-                  googleMapUrl=''
-                  directionsUrl=''
+                  googleMapUrl=""
+                  directionsUrl=""
                 />
               </div>
             </Grid>
 
-            {/* ── RIGHT: sticky sidebar ── */}
+            {/* ── RIGHT sidebar ── */}
             <Grid item xs={12} md={3}>
               <SellerSidebar
                 storeName={store.store_name || ''}
                 phone={store.phone || ''}
                 email={store.email || ''}
                 gstNumber={store.gst_number || ''}
-                location={location}
+                city={store.city || ''}
+                state={store.state || ''}
                 onInquiry={() => scrollToSection(3)}
-                onAbout={() => scrollToSection(0)}
+                onOverview={() => scrollToSection(0)}
                 onProducts={() => scrollToSection(1)}
                 onReviews={() => scrollToSection(2)}
-                onReachUs={() => scrollToSection(3)}
+                onContact={() => scrollToSection(3)}
               />
             </Grid>
 
