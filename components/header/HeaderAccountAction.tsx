@@ -55,7 +55,7 @@ function HeaderAccountActionContent(
   // If already logged in → go to account page
   const handleClick = () => {
     if (session?.loggedIn) {
-      router.push('/seller/dashboard')
+      router.push('/seller/profile')
       return
     }
     openLoginModal()

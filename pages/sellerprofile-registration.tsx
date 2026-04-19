@@ -530,7 +530,7 @@ function SellerProfileRegistrationPage() {
 
         // Redirect to dashboard or success page
         setTimeout(() => {
-          router.push('/seller/dashboard')
+          router.push('/seller/profile')
         }, 2000)
       }
     } catch (error) {

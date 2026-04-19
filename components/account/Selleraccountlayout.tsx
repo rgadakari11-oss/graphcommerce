@@ -135,12 +135,12 @@ export function SellerAccountLayout({ children }: Props) {
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + '/')
 
   const menuItems = [
-    {
-      href: '/seller/dashboard',
-      icon: DashboardIcon,
-      title: 'Dashboard',
-      badge: null,
-    },
+    // {
+    //   href: '/seller/dashboard',
+    //   icon: DashboardIcon,
+    //   title: 'Dashboard',
+    //   badge: null,
+    // },
     {
       href: '/seller/profile',
       icon: AccountCircle,

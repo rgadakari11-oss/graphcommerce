@@ -355,7 +355,7 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
       id: 'quote', label: 'Quote',
       icon: <RequestQuoteOutlinedIcon sx={{ fontSize: 22 }} />,
       activeIcon: <RequestQuoteIcon sx={{ fontSize: 22 }} />,
-      action: () => { setActiveTab('quote'); router.push('/quotecart') },
+      action: () => { setActiveTab('quote'); router.push('/cart') },
     },
     {
       id: 'account', label: 'Account',

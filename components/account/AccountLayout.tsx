@@ -188,7 +188,7 @@ export function AccountLayout({ children }: Props) {
         storedSellerAuth.email === email &&
         storedSellerAuth.is_seller === true
       ) {
-        router.replace('/seller/dashboard')
+        router.replace('/seller/profile')
         return
       }
 
@@ -215,7 +215,7 @@ export function AccountLayout({ children }: Props) {
           })
 
           if (isSeller) {
-            router.replace('/seller/dashboard')
+            router.replace('/seller/profile')
           }
         })
         .catch(() => {

@@ -28,7 +28,7 @@ function AccountIndexPage() {
       const auth = JSON.parse(localStorage.getItem('seller-auth') || '{}')
 
       if (auth?.is_seller) {
-        router.replace('/seller/dashboard')
+        router.replace('/seller/profile')
       } else {
         router.replace('/account/name')
       }

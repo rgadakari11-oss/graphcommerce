@@ -67,6 +67,7 @@ const NAV_ITEMS = ['Overview', 'Products', 'Reviews', 'Contact']
 // STATIC FALLBACK DATA
 // ─────────────────────────────────────────────────────────────────────────────
 const STATIC_STORE = {
+  customer_id: 0,
   store_name: 'Sree Balaji Exports',
   gst_number: '33CRFPK2110G1ZT',
   years_in_business: 19,

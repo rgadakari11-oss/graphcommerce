@@ -365,7 +365,7 @@ function IndexPage(props: LayoutNavigationProps) {
                   fontFamily: '"DM Sans", sans-serif',
                 }}
               >
-                Connect with verified suppliers across {allCategories.length || 14} industries. Post requirements, receive
+                Connect with verified suppliers across multiple industries. Post requirements, receive
                 competitive bulk quotes, and grow your procurement network.
               </Typography>
 
