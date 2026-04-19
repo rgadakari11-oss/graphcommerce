@@ -267,6 +267,12 @@ function IndexPage(props: LayoutNavigationProps) {
   // Magento setup exposes one, e.g. cat.is_trending or similar)
   const trendingCategories = allCategories.slice(0, 4)
   const LABELS = ['Trending', 'Top Seller', 'Hot', 'New']
+  const handleSearch = () => {
+    const value = searchVal.trim()
+    if (!value) return
+
+    router.push(`/search/${encodeURIComponent(value)}`)
+  }
   return (
     <>
       <PageMeta
@@ -395,6 +401,7 @@ function IndexPage(props: LayoutNavigationProps) {
                 />
                 <Button
                   variant="contained"
+                  onClick={handleSearch}   // 👈 THIS LINE FIXES YOUR ISSUE
                   sx={{
                     borderRadius: 0,
                     px: 3,

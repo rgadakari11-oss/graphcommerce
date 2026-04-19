@@ -774,7 +774,7 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
                             key={item?.uid}
                             component="a"
                             href={item?.url_path ? `/${item.url_path}` : '#'}
-                            onMouseEnter={() => { handleMouseEnter(item?.uid); setAllCategoriesOpen(false) }}
+                            onMouseEnter={() => setAllCategoriesOpen(false)}
                             onClick={(e: React.MouseEvent) => {
                               if (item?.url_path) { e.preventDefault(); setActiveUid(null); router.push(`/${item.url_path}`) }
                             }}
@@ -788,7 +788,30 @@ export function LayoutNavigation(props: LayoutNavigationProps) {
                             }}
                           >
                             {getMenuLabel(item?.name ?? '')}
-                            <IconSvg src={iconChevronDown} size="small" sx={{ flexShrink: 0, opacity: 0.6 }} />
+
+                            <Box
+                              onMouseEnter={() => handleMouseEnter(item?.uid)}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                ml: 0.3,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <IconSvg
+                                src={iconChevronDown}
+                                size="small"
+                                sx={{
+                                  flexShrink: 0,
+                                  opacity: 0.6,
+                                  transition: 'transform 0.2s',
+                                  '&:hover': {
+                                    opacity: 1,
+                                    transform: 'rotate(180deg)',
+                                  },
+                                }}
+                              />
+                            </Box>
                           </Box>
                         ))}
                       </Box>

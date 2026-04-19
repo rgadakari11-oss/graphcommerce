@@ -229,39 +229,42 @@ function ProductPage(props: Props) {
                   </Typography>
                 )}
 
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
-                  <Typography variant='h5' sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                    <ProductPageName product={product} />
-                  </Typography>
-                </Box>
+                <Box sx={{ px: { xs: '10px', md: 0 } }}>
 
-                {/* ── Location + Stock ── */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <LocationOnIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
-                    <Typography sx={{ fontSize: '12.5px', color: 'text.primary' }}>
-                      {seller?.area}
-                      {seller?.city ? `, ${seller?.city}` : ''}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: '10px', md: 0.75 } }}>
+                    <Typography variant='h5' sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                      <ProductPageName product={product} />
                     </Typography>
                   </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                    <Box
-                      sx={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: '50%',
-                        backgroundColor: '#4caf50',
-                        flexShrink: 0,
-                        boxShadow: '0 0 0 2px #c8e6c9',
-                      }}
-                    />
-                    <Typography sx={{ fontSize: '12.5px', fontWeight: 600, color: '#2e7d32' }}>
-                      In Stock
-                    </Typography>
-                    <Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-                      · Ready to Ship
-                    </Typography>
+                  {/* ── Location + Stock ── */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: '10px', md: 2 }, flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <LocationOnIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
+                      <Typography sx={{ fontSize: '12.5px', color: 'text.primary' }}>
+                        {seller?.area}
+                        {seller?.city ? `, ${seller?.city}` : ''}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      <Box
+                        sx={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: '50%',
+                          backgroundColor: '#4caf50',
+                          flexShrink: 0,
+                          boxShadow: '0 0 0 2px #c8e6c9',
+                        }}
+                      />
+                      <Typography sx={{ fontSize: '12.5px', fontWeight: 600, color: '#2e7d32' }}>
+                        In Stock
+                      </Typography>
+                      <Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
+                        · Ready to Ship
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
 
@@ -845,18 +848,20 @@ function ProductPage(props: Props) {
           sizes={responsiveVal(200, 400)}
         />
 
-        {sellerId && (
-          <SellerActionDialog
-            open={dialogState.open}
-            onClose={closeDialog}
-            actionType={dialogState.actionType}
-            productId={Number(product.id ?? 0)}
-            sellerId={sellerId}
-            defaultQuantity={minQty ?? undefined}
-            unitLabel={unitOfMeasurementLabel}
-          />
-        )}
-      </AddProductsToCartForm>
+        {
+          sellerId && (
+            <SellerActionDialog
+              open={dialogState.open}
+              onClose={closeDialog}
+              actionType={dialogState.actionType}
+              productId={Number(product.id ?? 0)}
+              sellerId={sellerId}
+              defaultQuantity={minQty ?? undefined}
+              unitLabel={unitOfMeasurementLabel}
+            />
+          )
+        }
+      </AddProductsToCartForm >
     </PrivateQueryMaskProvider >
   )
 }

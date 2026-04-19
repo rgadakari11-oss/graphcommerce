@@ -264,36 +264,7 @@ export function CustomSidebarGallery(props: CustomSidebarGalleryProps) {
                 ))}
               </Scroller>
               {afterScroller}
-              <MotionBox
-                layout='position'
-                layoutDependency={zoomed}
-                className={classes.topRight}
-                sx={{
-                  display: 'grid',
-                  gridAutoFlow: 'column',
-                  top: theme.spacings.sm,
-                  gap: theme.spacings.xxs,
-                  position: 'absolute',
-                  right: theme.spacings.sm,
-                }}
-              >
-                {!disableZoom && (
-                  <Fab
-                    size='small'
-                    className={classes.toggleIcon}
-                    disabled={!hasImages}
-                    onMouseUp={toggle}
-                    aria-label='Toggle Fullscreen'
-                    sx={{ boxShadow: 6 }}
-                  >
-                    {!zoomed ? (
-                      <IconSvg src={iconFullscreen} />
-                    ) : (
-                      <IconSvg src={iconFullscreenExit} />
-                    )}
-                  </Fab>
-                )}
-              </MotionBox>
+
               <Box
                 className={classes.centerLeft}
                 sx={{
@@ -301,7 +272,7 @@ export function CustomSidebarGallery(props: CustomSidebarGalleryProps) {
                   gridAutoFlow: 'row',
                   gap: theme.spacings.xxs,
                   position: 'absolute',
-                  right:'-50%',
+                  right: '-50%',
                   left: theme.spacings.sm,
                   top: 'calc(50% - 28px)',
                 }}
@@ -355,7 +326,7 @@ export function CustomSidebarGallery(props: CustomSidebarGalleryProps) {
                 }}
               >
                 {import.meta.graphCommerce.sidebarGallery?.paginationVariant ===
-                'THUMBNAILS_BOTTOM' ? (
+                  'THUMBNAILS_BOTTOM' ? (
                   <ScrollerThumbnails layoutDependency={zoomed} images={images} />
                 ) : (
                   <ScrollerDots layout />
@@ -376,12 +347,10 @@ export function CustomSidebarGallery(props: CustomSidebarGalleryProps) {
               },
               zoomed && {
                 [theme.breakpoints.up('md')]: {
-                  marginLeft: `calc((${responsiveVal(300, 500, undefined, theme.breakpoints.values.lg)} + ${
-                    theme.page.horizontal
-                  } * 2) * -1)`,
-                  left: `calc(${responsiveVal(300, 500, undefined, theme.breakpoints.values.lg)} + ${
-                    theme.page.horizontal
-                  } * 2)`,
+                  marginLeft: `calc((${responsiveVal(300, 500, undefined, theme.breakpoints.values.lg)} + ${theme.page.horizontal
+                    } * 2) * -1)`,
+                  left: `calc(${responsiveVal(300, 500, undefined, theme.breakpoints.values.lg)} + ${theme.page.horizontal
+                    } * 2)`,
                 },
               },
             ]}
