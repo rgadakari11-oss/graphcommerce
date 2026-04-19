@@ -107,7 +107,7 @@ function ProductCard({ product }: { product: ApiProduct }) {
     >
       {/* Thumbnail */}
       <Box sx={{
-        height: 90,
+        height: 'auto',
         bgcolor: BRAND_LIGHT,
         borderBottom: `1px solid ${BRAND_MID}`,
         display: 'flex',

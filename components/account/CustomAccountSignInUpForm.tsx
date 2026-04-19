@@ -35,6 +35,8 @@ import { CustomSignUpForm } from './CustomSignUpForm'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { useState } from 'react'
+import { Logo } from '../../components/Layout/Logo'
+
 
 export type CustomAccountSignInUpFormProps = {
   sx?: SxProps<Theme>
@@ -106,51 +108,34 @@ export function CustomAccountSignInUpForm(props: CustomAccountSignInUpFormProps)
           backgroundColor: 'background.paper',
         }}
       >
-        <Avatar
-          sx={{
-            width: 40,
-            height: 40,
-            bgcolor: mode === 'signedin' ? '#10B981' : '#1976D2',
-            flexShrink: 0,
-          }}
-        >
-          {mode === 'signedin' ? (
-            <CheckCircleIcon sx={{ fontSize: 20 }} />
-          ) : (
-            <LockOutlinedIcon sx={{ fontSize: 20 }} />
-          )}
-        </Avatar>
+
 
         <Box sx={{ flex: 1 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              color: 'text.primary',
-              letterSpacing: '-0.5px',
-              fontSize: '1.125rem',
-              lineHeight: 1.2,
-            }}
-          >
-            {mode === 'signedin' ? (
-              <Trans id="Welcome Back!" />
-            ) : (
-              <Trans id="YourBrand" />
-            )}
-          </Typography>
-
-          {mode !== 'signedin' && (
+          {mode === 'signedin' ? (
             <Typography
-              variant="caption"
+              variant="h6"
               sx={{
-                color: 'text.secondary',
-                fontSize: '0.75rem',
-                display: 'block',
+                fontWeight: 700,
+                color: 'text.primary',
+                letterSpacing: '-0.5px',
+                fontSize: '1.125rem',
                 lineHeight: 1.2,
+                textAlign: 'left', // keep text left
               }}
             >
-              <Trans id="Welcome to our B2B platform" />
+              <Trans id="Welcome Back!" />
             </Typography>
+          ) : (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center', // 👈 centers logo
+                alignItems: 'center',
+                width: '100%',
+              }}
+            >
+              <Logo />
+            </Box>
           )}
         </Box>
       </Box>

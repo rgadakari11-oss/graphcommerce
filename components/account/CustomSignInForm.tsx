@@ -248,7 +248,7 @@ export function CustomSignInForm(props: CustomSignInFormProps) {
         </FormControl>
       </FormActions>
 
-      <Divider sx={{ my: 1.5 }}>
+      {/* <Divider sx={{ my: 1.5 }}>
         <Typography
           component="span"
           sx={{
@@ -260,9 +260,9 @@ export function CustomSignInForm(props: CustomSignInFormProps) {
         >
           <Trans id="or continue with" />
         </Typography>
-      </Divider>
+      </Divider> */}
 
-      <Button
+      {/* <Button
         variant="outlined"
         color="inherit"
         size="large"
@@ -311,7 +311,7 @@ export function CustomSignInForm(props: CustomSignInFormProps) {
         }}
       >
         Continue with Google
-      </Button>
+      </Button> */}
     </Box>
   )
 }
