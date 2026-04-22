@@ -329,7 +329,7 @@ msgid "Discount code"
 msgstr "Discount code"
 
 msgid "Discover our collection and add items to your cart!"
-msgstr "Discover our collection and add items to your cart!"
+msgstr "Discover our collection and add items to your quote!"
 
 msgid "Discover our collection and add items to your comparelist!"
 msgstr "Discover our collection and add items to your comparelist!"
@@ -1210,7 +1210,7 @@ msgid "Your address has been added"
 msgstr "Your address has been added"
 
 msgid "Your cart is empty"
-msgstr "Your cart is empty"
+msgstr "Your quote is empty"
 
 msgid "Your comparelist is empty"
 msgstr "Your comparelist is empty"

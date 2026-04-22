@@ -352,7 +352,7 @@ function IndexPage(props: LayoutNavigationProps) {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  B2B Marketplace
+                  Marketplace
                 </Box>
               </Typography>
               <Typography
@@ -371,7 +371,7 @@ function IndexPage(props: LayoutNavigationProps) {
 
               <Box
                 sx={{
-                  display: 'flex',
+                  display: { xs: 'none', md: 'flex' },
                   bgcolor: '#fff',
                   borderRadius: '12px',
                   overflow: 'hidden',
@@ -417,7 +417,7 @@ function IndexPage(props: LayoutNavigationProps) {
                 </Button>
               </Box>
 
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Box sx={{ gap: 1, flexWrap: 'wrap', display: { xs: 'none', md: 'flex' } }}>
                 {allCategories.slice(0, 5).map((cat) => (
                   <Chip
                     key={cat.uid}
@@ -471,25 +471,25 @@ function IndexPage(props: LayoutNavigationProps) {
                     {
                       step: '01',
                       icon: '🧾',
-                      title: 'Multi-Seller Quotes',
+                      title: 'Multi-Seller Quotes — Add product to quote and get offers from verified sellers.',
                       sub: 'Add products and receive competitive offers from verified sellers.',
                     },
                     {
                       step: '02',
                       icon: '💰',
-                      title: 'Customized Pricing',
+                      title: 'Flexible Bulk Pricing — Volume-based quotes tailored to your order size.',
                       sub: 'Tailored quotes based on your bulk volume and requirements.',
                     },
                     {
                       step: '03',
                       icon: '🤝',
-                      title: 'Direct Negotiations',
+                      title: 'Direct Negotiations — Negotiate terms, shipping & lead times instantly.',
                       sub: 'Message sellers to finalize terms, shipping, and lead times.',
                     },
                     {
                       step: '04',
                       icon: '🛟',
-                      title: '24/7 Trade Support',
+                      title: '24/7 Trade Support — From first inquiry to final delivery, we have got you.',
                       sub: 'Our team assists you from inquiry to final delivery.',
                     },
                   ].map((item, i, arr) => (
@@ -535,29 +535,18 @@ function IndexPage(props: LayoutNavigationProps) {
                       </Box>
                       <Box sx={{ flex: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.3 }}>
-                          <span style={{ fontSize: '0.88rem' }}>{item.icon}</span>
                           <Typography
                             sx={{
                               fontFamily: '"DM Sans", sans-serif',
-                              fontWeight: 700,
-                              fontSize: '0.84rem',
-                              color: '#fff',
+                              color: 'rgba(255,255,255,.75)',
+                              fontSize: { xs: '1rem', md: '1.1rem' },
                               lineHeight: 1.2,
                             }}
                           >
                             {item.title}
                           </Typography>
                         </Box>
-                        <Typography
-                          sx={{
-                            fontFamily: '"DM Sans", sans-serif',
-                            fontSize: '0.73rem',
-                            color: 'rgba(255,255,255,.5)',
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          {item.sub}
-                        </Typography>
+
                       </Box>
                     </Box>
                   ))}
@@ -587,40 +576,7 @@ function IndexPage(props: LayoutNavigationProps) {
         </Container>
       </Box>
 
-      {/* ── TRUST BAR ──────────────────────────────────────────────────────── */}
-      <Box sx={{ bgcolor: '#f97316', py: 1.5 }}>
-        <Container maxWidth="lg">
-          <Box
-            sx={{
-              display: 'flex',
-              gap: { xs: 2, md: 5 },
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-            }}
-          >
-            {[
-              '✅ Zero Commission on First 100 Orders',
-              '🔒 Verified Suppliers',
-              '💬 24/7 Trade Desk',
-              '🆓 Free Registration',
-            ].map((t) => (
-              <Typography
-                key={t}
-                sx={{
-                  fontFamily: '"DM Sans", sans-serif',
-                  fontWeight: 600,
-                  color: '#fff',
-                  fontSize: { xs: '0.78rem', md: '0.88rem' },
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {t}
-              </Typography>
-            ))}
-          </Box>
-        </Container>
-      </Box>
+
 
       {/* ── TRENDING / MOST ACTIVE CATEGORIES ─────────────────────────────── */}
       {trendingCategories.length > 0 && (
@@ -713,20 +669,20 @@ function IndexPage(props: LayoutNavigationProps) {
             Can't find what you need?
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,.55)', fontSize: '0.8rem', mt: 0.3, fontFamily: '"DM Sans", sans-serif' }}>
-            Post a requirement and receive bulk quotes from verified suppliers
+            Add products to get bulk quotes from verified suppliers.
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Box component="button" sx={{
-            px: 2.5, py: '9px', bgcolor: '#f97316', color: '#fff', border: 'none',
+          <Box component="a" href="/cart" sx={{
+            px: 2.5, py: '9px', textDecoration: 'none', bgcolor: '#f97316', color: '#fff', border: 'none',
             borderRadius: '9px', fontWeight: 700, fontSize: '0.82rem',
             cursor: 'pointer', fontFamily: '"DM Sans", sans-serif',
             '&:hover': { bgcolor: '#c2410c' },
           }}>
             Post requirement
           </Box>
-          <Box component="button" sx={{
-            px: 2.5, py: '9px', bgcolor: 'transparent', color: '#fff',
+          <Box component="a" href="/allcategories" sx={{
+            px: 2.5, py: '9px', textDecoration: 'none', bgcolor: 'transparent', color: '#fff',
             border: '1px solid rgba(255,255,255,.3)', borderRadius: '9px',
             fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
             fontFamily: '"DM Sans", sans-serif',
@@ -737,6 +693,7 @@ function IndexPage(props: LayoutNavigationProps) {
       </Box>
 
       <ProductsSection categoryIds={[357, 431, 504]} />
+
 
       {/* ── ALL CATEGORIES ──────────────────────────────────────────────────── */}
       {allCategories.length > 0 && (
@@ -901,6 +858,8 @@ function IndexPage(props: LayoutNavigationProps) {
             <Button
               variant="contained"
               size="large"
+              component="a"
+              href="/account/sellersignup"
               sx={{
                 background: 'linear-gradient(90deg, #f97316, #ea580c)',
                 textTransform: 'none',
@@ -918,6 +877,8 @@ function IndexPage(props: LayoutNavigationProps) {
             <Button
               variant="outlined"
               size="large"
+              component="a"
+              href="/cart"
               sx={{
                 borderColor: 'rgba(255,255,255,.4)',
                 borderWidth: 2,

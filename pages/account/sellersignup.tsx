@@ -240,7 +240,7 @@ function SellerSignupPage() {
     {
       name: 'Rajesh Kumar',
       business: 'Kumar Electronics',
-      quote: 'QTYBID helped us connect with 50+ new suppliers in just 2 months!',
+      quote: 'QtyBiz helped us connect with 50+ new suppliers in just 2 months!',
       growth: '+150% orders',
     },
     {
@@ -301,19 +301,19 @@ function SellerSignupPage() {
   // FAQ data
   const faqs = [
     {
-      question: 'What are the benefits of listing my business on QTYBID?',
+      question: 'What are the benefits of listing my business on QtyBiz?',
       answer:
         'Get discovered by thousands of buyers, showcase your products/services, receive direct inquiries, build credibility with verified badge, and access analytics to track your performance.',
     },
     {
-      question: 'Can I list my business for free on QTYBID?',
+      question: 'Can I list my business for free on QtyBiz?',
       answer:
         'Yes! Basic business listing is completely FREE. You can upgrade to premium plans for additional features like priority listing, featured placement, and advanced analytics.',
     },
     {
-      question: 'I already have a website and would promote my brand, Can I still use QTYBID?',
+      question: 'I already have a website and would promote my brand, Can I still use QtyBiz?',
       answer:
-        'Absolutely! QTYBID complements your existing website by providing additional exposure to B2B buyers actively searching for suppliers. Many businesses use both successfully.',
+        'Absolutely! QtyBiz complements your existing website by providing additional exposure to B2B buyers actively searching for suppliers. Many businesses use both successfully.',
     },
     {
       question: 'For which all documents am I eligible to seek a credit for my business listing?',
@@ -328,7 +328,7 @@ function SellerSignupPage() {
       title: 'Understanding B2B Platform: Connecting Businesses for Growth',
     },
     {
-      title: 'QTYBID Listing for the Right Business Categories',
+      title: 'QtyBiz Listing for the Right Business Categories',
     },
     {
       title: 'How to Respond to Customer Reviews and Quotations',
@@ -340,8 +340,8 @@ function SellerSignupPage() {
   return (
     <>
       <PageMeta
-        title={i18n._(/* i18n */ 'Sign Up - QTYBID | List Your Business for FREE')}
-        metaDescription="Register your business on QTYBID for FREE. Get verified, showcase products, receive inquiries from genuine buyers. Join 500+ suppliers today!"
+        title={i18n._(/* i18n */ 'Sign Up - QtyBiz | List Your Business for FREE')}
+        metaDescription="Register your business on QtyBiz for FREE. Get verified, showcase products, receive inquiries from genuine buyers. Join 500+ suppliers today!"
       />
 
       {/* Hero Section */}
@@ -390,7 +390,7 @@ function SellerSignupPage() {
               <List sx={{ color: 'white' }}>
                 {[
                   'Get Verified & Build Trust with Buyers',
-                  'Showcase Products with Images & Videos',
+                  'Showcase Products with Images',
                   'Unlimited Product Listings',
                   'Receive Inquiries & Quotation Requests',
                 ].map((benefit, index) => (
@@ -724,7 +724,7 @@ function SellerSignupPage() {
       </Box>
 
       {/* Educational Content */}
-      <Box py={6} sx={{ bgcolor: '#F8F9FA' }}>
+      {/* <Box py={6} sx={{ bgcolor: '#F8F9FA' }}>
         <Container maxWidth="lg">
           <Typography
             variant="h4"
@@ -782,7 +782,7 @@ function SellerSignupPage() {
             ))}
           </Grid>
         </Container>
-      </Box>
+      </Box> */}
 
       {/* Final CTA */}
       <Box
@@ -795,7 +795,7 @@ function SellerSignupPage() {
       >
         <Container maxWidth="md">
           <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
-            Get Your Business on QTYBID for FREE Today!
+            Get Your Business on QtyBiz for FREE Today!
           </Typography>
           <Typography variant="h6" sx={{ mb: 3, opacity: 0.9, fontWeight: 400 }}>
             Join India's fastest-growing B2B marketplace
