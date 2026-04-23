@@ -19,6 +19,9 @@ class Document extends NextDocument<EmotionCacheProps & LinguiDocumentProps> {
         <Head>
           <DocumentHeadStart key='head-start' {...this.props} />
           {getCssFlagsInitScript()}
+          <link rel="icon" href="/favicons.ico" />
+          <link rel="shortcut icon" href="/favicons.ico" />
+
           {/* Inject MUI styles first to match with the prepend: true configuration. */}
           <meta name='emotion-insertion-point' content='' />
           {this.props.emotionStyleTags}

@@ -246,7 +246,7 @@ function SellerSignupPage() {
     {
       name: 'Priya Sharma',
       business: 'Sharma Textiles',
-      quote: 'Best B2B platform for bulk procurement. Highly recommended!',
+      quote: 'Best platform for bulk procurement. Highly recommended!',
       growth: '+200% reach',
     },
     {

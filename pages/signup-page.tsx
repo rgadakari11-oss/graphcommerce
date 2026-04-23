@@ -100,14 +100,14 @@ function SignupPage() {
       name: 'Rajesh Kumar',
       business: 'Kumar Electronics',
       image: '/testimonials/rajesh.jpg',
-      quote: 'QTYBID helped us connect with 50+ new suppliers in just 2 months!',
+      quote: 'QtyBiz helped us connect with 50+ new suppliers in just 2 months!',
       growth: '+150% orders',
     },
     {
       name: 'Priya Sharma',
       business: 'Sharma Textiles',
       image: '/testimonials/priya.jpg',
-      quote: 'Best B2B platform for bulk procurement. Highly recommended!',
+      quote: 'Best platform for bulk procurement. Highly recommended!',
       growth: '+200% reach',
     },
     {
@@ -163,19 +163,19 @@ function SignupPage() {
   // FAQ data
   const faqs = [
     {
-      question: 'What are the benefits of listing my business on QTYBID?',
+      question: 'What are the benefits of listing my business on QtyBiz?',
       answer:
         'Get discovered by thousands of buyers, showcase your products/services, receive direct inquiries, build credibility with verified badge, and access analytics to track your performance.',
     },
     {
-      question: 'Can I list my business for free on QTYBID?',
+      question: 'Can I list my business for free on QtyBiz?',
       answer:
         'Yes! Basic business listing is completely FREE. You can upgrade to premium plans for additional features like priority listing, featured placement, and advanced analytics.',
     },
     {
-      question: 'I already have a website and would promote my brand, Can I still use QTYBID?',
+      question: 'I already have a website and would promote my brand, Can I still use QtyBiz?',
       answer:
-        'Absolutely! QTYBID complements your existing website by providing additional exposure to B2B buyers actively searching for suppliers. Many businesses use both successfully.',
+        'Absolutely! QtyBiz complements your existing website by providing additional exposure to B2B buyers actively searching for suppliers. Many businesses use both successfully.',
     },
     {
       question: 'For which all documents am I eligible to seek a credit for my business listing?',
@@ -191,7 +191,7 @@ function SignupPage() {
       link: '#',
     },
     {
-      title: 'QTYBID Listing for the Right Business Categories',
+      title: 'QtyBiz Listing for the Right Business Categories',
       link: '#',
     },
     {
@@ -203,8 +203,8 @@ function SignupPage() {
   return (
     <>
       <PageMeta
-        title="List Your Business for FREE | QTYBID - India's B2B Marketplace"
-        metaDescription="Register your business on QTYBID for FREE. Get verified, showcase products, receive inquiries from genuine buyers. Join 500+ suppliers today!"
+        title="List Your Business for FREE | QtyBiz - India's Marketplace"
+        metaDescription="Register your business on QtyBiz for FREE. Get verified, showcase products, receive inquiries from genuine buyers. Join 500+ suppliers today!"
       />
 
       {/* Hero Section */}
@@ -619,7 +619,7 @@ function SignupPage() {
                         mt: 2,
                       }}
                     >
-                      By continuing, you agree to QTYBID's{' '}
+                      By continuing, you agree to QtyBiz's{' '}
                       <Box component="span" sx={{ color: 'primary.main', cursor: 'pointer' }}>
                         Terms & Conditions
                       </Box>
@@ -988,7 +988,7 @@ function SignupPage() {
       >
         <Container maxWidth="md">
           <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
-            Get Your Business on QTYBID for FREE Today!
+            Get Your Business on QtyBiz for FREE Today!
           </Typography>
           <Typography variant="h6" sx={{ mb: 3, opacity: 0.9, fontWeight: 400 }}>
             Join India's fastest-growing B2B marketplace

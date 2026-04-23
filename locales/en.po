@@ -928,8 +928,8 @@ msgstr "Sign In"
 msgid "Sign Up"
 msgstr "Sign Up"
 
-msgid "Sign Up - QTYBID | List Your Business for FREE"
-msgstr "Sign Up - QTYBID | List Your Business for FREE"
+msgid "Sign Up - QtyBiz | List Your Business for FREE"
+msgstr "Sign Up - QtyBiz | List Your Business for FREE"
 
 msgid "Sign in"
 msgstr "Sign in"

@@ -276,8 +276,8 @@ function IndexPage(props: LayoutNavigationProps) {
   return (
     <>
       <PageMeta
-        title="QTYBID — India's B2B Marketplace | Connect. Trade. Grow."
-        metaDescription="Connect with verified suppliers across 14 categories. Post requirements, get quotes, and grow your business on QTYBID."
+        title="QtyBiz — India's Marketplace | Connect. Trade. Grow."
+        metaDescription="Connect with verified suppliers across 14 categories. Post requirements, get quotes, and grow your business on QtyBiz."
       />
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
@@ -582,66 +582,61 @@ function IndexPage(props: LayoutNavigationProps) {
       {trendingCategories.length > 0 && (
         <Box sx={{ bgcolor: '#fafafa', py: { xs: 2, md: 2 } }}>
           <Container maxWidth="lg">
-            <Box
-              sx={{
+            <Box sx={{ mb: 3 }}>
+              {/* Row 1: Trending Now label (left) + View All button (right) */}
+              <Box sx={{
                 display: 'flex',
-                alignItems: 'flex-end',
+                alignItems: 'center',
                 justifyContent: 'space-between',
-                mb: 3,
-                flexWrap: 'wrap',
-                gap: 1.5,
-              }}
-            >
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                mb: 0.5,
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <TrendingIcon sx={{ color: '#1159b4', fontSize: 20 }} />
-                  <Typography
-                    sx={{
-                      fontFamily: '"DM Sans", sans-serif',
-                      fontWeight: 800,
-                      color: '#1159b4',
-                      fontSize: '0.78rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                    }}
-                  >
+                  <Typography sx={{
+                    fontFamily: '"DM Sans", sans-serif',
+                    fontWeight: 800,
+                    color: '#1159b4',
+                    fontSize: '0.78rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                  }}>
                     Trending Now
                   </Typography>
                 </Box>
-                <Typography
-                  variant="h4"
+
+                <Button
+                  variant="contained"
+                  component="a"
+                  href="/allcategories"
+                  endIcon={<ArrowIcon />}
                   sx={{
+                    background: '#f8f9fa',
+                    textTransform: 'none',
                     fontFamily: '"DM Sans", sans-serif',
-                    fontWeight: 800,
-                    color: '#0f172a',
-                    fontSize: { xs: '1.5rem', md: '1.9rem' },
-                    letterSpacing: '-0.02em',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    borderRadius: '9px',
+                    px: 2.5,
+                    py: 1,
+                    boxShadow: 'none',
+                    color: '#1159b4',
+                    '&:hover': { background: '#f1f5f9', boxShadow: 'none' },
                   }}
                 >
-                  Most Active Categories
-                </Typography>
+                  All Categories
+                </Button>
               </Box>
 
-              <Button
-                variant="contained"
-                component="a"
-                href="/allcategories"
-                endIcon={<ArrowIcon />}
-                sx={{
-                  background: '#f8f9fa',
-                  textTransform: 'none',
-                  fontFamily: '"DM Sans", sans-serif',
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                  borderRadius: '9px',
-                  px: 2.5,
-                  py: 1,
-                  boxShadow: 'none',
-                  '&:hover': { background: '#f8f9fa', boxShadow: 'none' },
-                }}
-              >
-                View All Categories
-              </Button>
+              {/* Row 2: Main heading */}
+              <Typography variant="h4" sx={{
+                fontFamily: '"DM Sans", sans-serif',
+                fontWeight: 800,
+                color: '#0f172a',
+                fontSize: { xs: '1.5rem', md: '1.9rem' },
+                letterSpacing: '-0.02em',
+              }}>
+                Most Active Categories
+              </Typography>
             </Box>
 
             <Grid container spacing={2.5}>
@@ -696,49 +691,51 @@ function IndexPage(props: LayoutNavigationProps) {
 
 
       {/* ── ALL CATEGORIES ──────────────────────────────────────────────────── */}
-      {allCategories.length > 0 && (
-        <Box sx={{ bgcolor: '#fff', py: { xs: 5, md: 7 } }}>
-          <Container maxWidth="lg">
-            <Box sx={{ mb: 4 }}>
-              <Typography
-                sx={{
-                  fontFamily: '"DM Sans", sans-serif',
-                  fontWeight: 800,
-                  color: '#1159b4',
-                  fontSize: '0.82rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  mb: 0.5,
-                }}
-              >
-                Browse by Industry
-              </Typography>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontFamily: '"DM Sans", sans-serif',
-                  fontWeight: 800,
-                  color: '#0f172a',
-                  fontSize: { xs: '1.5rem', md: '1.9rem' },
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                All Product Categories
-              </Typography>
-            </Box>
+      {
+        allCategories.length > 0 && (
+          <Box sx={{ bgcolor: '#fff', py: { xs: 5, md: 7 } }}>
+            <Container maxWidth="lg">
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  sx={{
+                    fontFamily: '"DM Sans", sans-serif',
+                    fontWeight: 800,
+                    color: '#1159b4',
+                    fontSize: '0.82rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    mb: 0.5,
+                  }}
+                >
+                  Browse by Industry
+                </Typography>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontFamily: '"DM Sans", sans-serif',
+                    fontWeight: 800,
+                    color: '#0f172a',
+                    fontSize: { xs: '1.5rem', md: '1.9rem' },
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  All Product Categories
+                </Typography>
+              </Box>
 
-            <Grid container spacing={2.5}>
-              {allCategories.map((cat) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={cat.uid}>
-                  <CategoryCard cat={cat} variant="compact" />
-                </Grid>
-              ))}
-            </Grid>
-          </Container>
-        </Box>
-      )}
+              <Grid container spacing={2.5}>
+                {allCategories.map((cat) => (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={cat.uid}>
+                    <CategoryCard cat={cat} variant="compact" />
+                  </Grid>
+                ))}
+              </Grid>
+            </Container>
+          </Box>
+        )
+      }
 
-      {/* ── WHY QTYBID ──────────────────────────────────────────────────────── */}
+      {/* ── WHY QtyBiz ──────────────────────────────────────────────────────── */}
       <Box sx={{ bgcolor: '#f8fafc', py: { xs: 6, md: 8 } }}>
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 6 }}>
@@ -752,7 +749,7 @@ function IndexPage(props: LayoutNavigationProps) {
                 letterSpacing: '-0.02em',
               }}
             >
-              Why Thousands Choose QTYBID
+              Why Thousands Choose QtyBiz
             </Typography>
             <Typography
               sx={{

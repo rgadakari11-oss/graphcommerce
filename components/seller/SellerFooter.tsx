@@ -21,7 +21,7 @@ export default function SellerFooter() {
             © {new Date().getFullYear()} Right Solutions. All rights reserved.
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Verified B2B Marketplace
+            Verified Marketplace
           </Typography>
         </Box>
       </Container>

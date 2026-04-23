@@ -1,12 +1,32 @@
 import { onError } from '@apollo/client/link/error'
 
-const TOKEN_KEY = 'customerToken'
-
 let isRedirecting = false
 
-function clearStoredToken(): void {
+function clearAllAuthStorage(): void {
   if (typeof window === 'undefined') return
-  localStorage.removeItem(TOKEN_KEY)
+
+  // GraphCommerce persists the entire Apollo cache under this key
+  localStorage.removeItem('apollo-cache-persist')
+
+  // Also clear any other auth-related keys just in case
+  const keysToRemove: string[] = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (
+      key &&
+      (key.toLowerCase().includes('token') ||
+        key.toLowerCase().includes('customer') ||
+        key.toLowerCase().includes('apollo') ||
+        key.toLowerCase().includes('cart') ||
+        key.toLowerCase().includes('auth'))
+    ) {
+      keysToRemove.push(key)
+    }
+  }
+  keysToRemove.forEach((key) => localStorage.removeItem(key))
+
+  // Clear sessionStorage too
+  sessionStorage.clear()
 }
 
 function isAuthError(graphQLErrors: readonly any[]): boolean {
@@ -25,12 +45,12 @@ export function createAuthErrorLink() {
     if (isAuthError(graphQLErrors) && !isRedirecting) {
       isRedirecting = true
 
-      // Clear token from localStorage
-      clearStoredToken()
+      clearAllAuthStorage()
 
-      // Redirect user to login page
       if (typeof window !== 'undefined') {
-        window.location.href = '/account/signin?reason=session_expired'
+        setTimeout(() => {
+          window.location.href = '/account/signin?reason=session_expired'
+        }, 100)
       }
     }
   })

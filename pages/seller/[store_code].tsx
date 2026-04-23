@@ -1085,7 +1085,7 @@ function SellerFooter({ storeName }: { storeName: string }) {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            {['Verified Supplier', 'Secure B2B', 'Trusted Marketplace'].map(label => (
+            {['Verified Supplier', 'Secure', 'Trusted Marketplace'].map(label => (
               <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.65, bgcolor: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.09)`, borderRadius: '8px' }}>
                 <CheckCircleIcon sx={{ fontSize: 11, color: T.emerald }} />
                 <Typography sx={{ fontFamily: T.fontBody, fontSize: '0.68rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>{label}</Typography>
@@ -1181,8 +1181,8 @@ export default function SellerPage() {
   return (
     <>
       <Head>
-        <title>{store.store_name} | B2B Marketplace</title>
-        <meta name="description" content={`${store.store_name} — Verified B2B Supplier`} />
+        <title>{store.store_name} |  Marketplace</title>
+        <meta name="description" content={`${store.store_name} — Verified Supplier`} />
       </Head>
 
       <Box sx={{ minHeight: '100vh', bgcolor: T.surface, fontFamily: T.fontBody }}>

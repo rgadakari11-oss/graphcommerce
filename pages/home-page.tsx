@@ -384,8 +384,8 @@ function HomePage() {
   return (
     <>
       <PageMeta
-        title="QTYBID - India's Growing B2B Marketplace | Connect. Trade. Grow."
-        metaDescription="Join QTYBID, India's emerging B2B marketplace. Connect with verified suppliers, post requirements, and grow your business with competitive quotes."
+        title="QtyBiz - India's Growing Marketplace | Connect. Trade. Grow."
+        metaDescription="Join QtyBiz, India's emerging marketplace. Connect with verified suppliers, post requirements, and grow your business with competitive quotes."
       />
 
       {/* Hero Section */}
@@ -432,7 +432,7 @@ function HomePage() {
                       WebkitTextFillColor: 'transparent',
                     }}
                   >
-                    QTYBID
+                    QtyBiz
                   </Box>
                 </Typography>
                 <Typography
@@ -761,7 +761,7 @@ function HomePage() {
                 mb: 2,
               }}
             >
-              Why Choose QTYBID?
+              Why Choose QtyBiz?
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.1rem' }}>
               Building India's most trusted B2B marketplace
@@ -820,7 +820,7 @@ function HomePage() {
                 mb: 2,
               }}
             >
-              How QTYBID Works
+              How QtyBiz Works
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.1rem' }}>
               Start trading in 4 simple steps
@@ -894,7 +894,7 @@ function HomePage() {
             Ready to Grow Your Business?
           </Typography>
           <Typography variant="h6" sx={{ mb: 4, opacity: 0.9, fontWeight: 300 }}>
-            Join QTYBID today and connect with thousands of businesses across India
+            Join QtyBiz today and connect with thousands of businesses across India
           </Typography>
           <Box display="flex" gap={2} justifyContent="center" flexWrap="wrap" mb={4}>
             <Button
