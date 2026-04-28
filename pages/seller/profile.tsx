@@ -46,8 +46,12 @@ import { LayoutDocument, LayoutNavigation } from '../../components'
 import { SellerAccountLayout } from '../../components/account/Selleraccountlayout'
 import { graphqlSharedClient, graphqlSsrClient } from '../../lib/graphql/graphqlSsrClient'
 import { getSellerId } from '../../lib/utils/getMobileNumber'
+import dynamic from 'next/dynamic'
+import 'react-quill/dist/quill.snow.css'
 
-const sellerId = Number(getSellerId())
+const ReactQuill = dynamic(() => import('react-quill'), {
+  ssr: false,
+})
 
 // ─── GraphQL: Query ──────────────────────────────────────────────────────────
 
@@ -361,106 +365,36 @@ function ProfileSkeleton() {
   )
 }
 
-// ─── Rich Text Editor ─────────────────────────────────────────────────────────
-
-function RichTextEditor({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (val: string) => void
-}) {
-  const exec = (cmd: string, arg?: string) => document.execCommand(cmd, false, arg)
-
-  const toolbarButtons = [
-    { label: 'B', cmd: 'bold', style: { fontWeight: 'bold' as const } },
-    { label: 'I', cmd: 'italic', style: { fontStyle: 'italic' as const } },
-    { label: 'U', cmd: 'underline', style: { textDecoration: 'underline' as const } },
-    { label: 'H3', cmd: 'formatBlock', arg: 'h3', style: {} },
-    { label: '• List', cmd: 'insertUnorderedList', style: {} },
-    { label: '1. List', cmd: 'insertOrderedList', style: {} },
-  ]
-
-  return (
-    <Box
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        overflow: 'hidden',
-        '&:focus-within': {
-          borderColor: '#8b5cf6',
-          boxShadow: `0 0 0 3px ${alpha('#8b5cf6', 0.1)}`,
-        },
-      }}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 0.5,
-          p: 1,
-          bgcolor: alpha('#000', 0.02),
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        {toolbarButtons.map((btn) => (
-          <Button
-            key={btn.cmd + (btn.arg ?? '')}
-            size='small'
-            variant='outlined'
-            onMouseDown={(e) => {
-              e.preventDefault()
-              exec(btn.cmd, btn.arg)
-            }}
-            sx={{
-              minWidth: 'auto',
-              px: 1.2,
-              py: 0.3,
-              fontSize: '0.75rem',
-              textTransform: 'none',
-              borderColor: 'divider',
-              color: 'text.primary',
-              borderRadius: 1.5,
-              ...btn.style,
-              '&:hover': { borderColor: '#8b5cf6', color: '#8b5cf6' },
-            }}
-          >
-            {btn.label}
-          </Button>
-        ))}
-      </Box>
-      <Box
-        contentEditable
-        suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: value }}
-        onInput={(e) => onChange((e.target as HTMLElement).innerHTML)}
-        sx={{
-          minHeight: 200,
-          p: 2,
-          outline: 'none',
-          fontSize: '0.875rem',
-          lineHeight: 1.7,
-          color: 'text.primary',
-          '& h3': { fontSize: '1rem', fontWeight: 700, mb: 1, mt: 1.5 },
-          '& ul, & ol': { pl: 2.5 },
-          '& li': { mb: 0.5 },
-          '& p': { mb: 1 },
-          '& strong': { fontWeight: 700 },
-        }}
-      />
-    </Box>
-  )
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 type Props = Record<string, unknown>
 type GetPageStaticProps = GetStaticProps<LayoutNavigationProps, Props>
 
-
 function SellerProfilePage() {
+  const [sellerId, setSellerId] = useState<number | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout
+
+    const loadSellerId = () => {
+      const id = getSellerId()
+
+      if (id && id !== 0) {
+        setSellerId(id)
+      } else {
+        // retry after 1.5 sec
+        timeout = setTimeout(() => {
+          setRetryCount((prev) => prev + 1)
+        }, 1500)
+      }
+    }
+
+    loadSellerId()
+
+    return () => clearTimeout(timeout)
+  }, [retryCount])
   const customerQuery = useCustomerQuery(CustomerDocument, { fetchPolicy: 'cache-and-network' })
 
   // ── Fetch store ───────────────────────────────────────────────────────────
@@ -470,7 +404,8 @@ function SellerProfilePage() {
     error: queryError,
     refetch,
   } = useQuery(VENDOR_STORE_QUERY, {
-    variables: { customer_id: sellerId },
+    variables: { customer_id: Number(sellerId) },
+    skip: !sellerId, // 🚀 important
     fetchPolicy: 'network-only',
   })
 
@@ -524,7 +459,7 @@ function SellerProfilePage() {
 
       const input: Record<string, unknown> = {
         store_id: rawStore.store_id,
-        customer_id: sellerId,
+        customer_id: Number(sellerId),
       }
 
       sectionFields.forEach((key) => {
@@ -1037,7 +972,8 @@ function SellerProfilePage() {
                   ) : (
                     <>
                       <Grid item xs={12}>
-                        <ReadField label='Address' value={storeData.address} />
+                        <ReadField label='Address' value={storeData.address?.split('|').map(v => v.trim()).join(', ')}
+                        />
                       </Grid>
                       <Grid item xs={6}>
                         <ReadField label='Area' value={storeData.area} />
@@ -1052,7 +988,7 @@ function SellerProfilePage() {
                         <ReadField label='Pincode' value={storeData.pincode} />
                       </Grid>
                       <Grid item xs={6}>
-                        <ReadField label='Country' value={storeData.country} />
+                        <ReadField label='Country' value="India" />
                       </Grid>
                       <Grid item xs={6}>
                         <ReadField label='Latitude' value={storeData.latitude} />
@@ -1150,6 +1086,7 @@ function SellerProfilePage() {
                 onCancel={handleCancel}
               >
                 {isEditing('about') ? (
+
                   <Box>
                     <Typography
                       variant='caption'
@@ -1160,12 +1097,29 @@ function SellerProfilePage() {
                       Use the toolbar to format your store description. This will appear on
                       your public seller profile.
                     </Typography>
-                    <RichTextEditor
-                      value={draft?.about_us ?? ''}
-                      onChange={(val) =>
-                        setDraft((prev) => (prev ? { ...prev, about_us: val } : prev))
-                      }
-                    />
+
+                    <Box
+                      sx={{
+                        '& .ql-container': {
+                          minHeight: 180,
+                          fontSize: '0.875rem',
+                        },
+                        '& .ql-toolbar': {
+                          borderRadius: '8px 8px 0 0',
+                        },
+                        '& .ql-container.ql-snow': {
+                          borderRadius: '0 0 8px 8px',
+                        },
+                      }}
+                    >
+                      <ReactQuill
+                        theme="snow"
+                        value={draft?.about_us ?? ''}
+                        onChange={(val) =>
+                          setDraft((prev) => (prev ? { ...prev, about_us: val } : prev))
+                        }
+                      />
+                    </Box>
                   </Box>
                 ) : (
                   <Box
@@ -1205,9 +1159,7 @@ function SellerProfilePage() {
               spacing={2}
               justifyContent='space-between'
             >
-              <Typography variant='caption' color='text.disabled'>
-                Store ID: {storeData.store_id} • Customer ID: {storeData.customer_id}
-              </Typography>
+
               {storeData.updated_at && (
                 <Typography variant='caption' color='text.disabled'>
                   Last updated:{' '}

@@ -137,7 +137,7 @@ export const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (files) {
-      const maxSize = 500 * 1024 // 500 KB in bytes
+      const maxSize = 1024 * 1024 // 500 KB in bytes
       const validFiles: ImageData[] = []
       const invalidFiles: string[] = []
 
@@ -217,7 +217,7 @@ export const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
           Drag & drop or click to browse • PNG, JPG
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-          Recommended: 500×500 pixels • Max file size: 500 KB per image
+          Recommended: 500×500 pixels • Max file size: 1 MB per image
         </Typography>
       </Box>
 

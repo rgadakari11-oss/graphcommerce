@@ -654,13 +654,13 @@ function ProductEditPage({ menu }: LayoutNavigationProps) {
                           <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Category sx={{ color: '#3b82f6', fontSize: 20 }} />Product Categories *
                           </Typography>
-                          <Button
+                          {/* <Button
                             size="small" startIcon={<Add />}
                             onClick={() => setCategoryRequestOpen(true)}
                             sx={{ textTransform: 'none', fontSize: '0.8rem', color: '#3b82f6', fontWeight: 600 }}
                           >
                             Request Category
-                          </Button>
+                          </Button> */}
                         </Stack>
 
                         {/* Skeleton while resolving seller id / fetching business categories */}
@@ -689,13 +689,13 @@ function ProductEditPage({ menu }: LayoutNavigationProps) {
 
                             <Typography variant="caption" color="text.secondary" sx={{ pl: 1, mt: 0.5, display: 'block' }}>
                               Expand any category to select sub-categories and micro-categories.{' '}
-                              <Typography
+                              {/* <Typography
                                 component="span" variant="caption"
                                 sx={{ color: '#3b82f6', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
                                 onClick={() => setCategoryRequestOpen(true)}
                               >
                                 Can't find yours? Request it.
-                              </Typography>
+                              </Typography> */}
                             </Typography>
                           </>
                         )}
@@ -1162,9 +1162,9 @@ function ProductEditPage({ menu }: LayoutNavigationProps) {
           >
             <DialogTitle sx={{ pb: 1 }}>
               <Typography variant="h6" fontWeight={700}>Request New Category</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {/* <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                 Can't find the right category? Let us know and we'll add it.
-              </Typography>
+              </Typography> */}
             </DialogTitle>
             <DialogContent sx={{ pt: 2 }}>
               <TextField

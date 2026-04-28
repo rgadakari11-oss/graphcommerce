@@ -608,9 +608,8 @@ function SellerProfileRegistrationPage({ menu }: LayoutNavigationProps) {
                                 </Grid>
                                 <Grid item xs={12} sm={6}>
                                   <TextField
-                                    fullWidth label="Email Address (Optional)" name="email" type="email"
+                                    fullWidth label="Email Address" name="email" type="email"
                                     value={formData.email} onChange={handleInputChange}
-                                    helperText="Optional - for account recovery and updates"
                                     InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon color="action" /></InputAdornment> }}
                                   />
                                 </Grid>
@@ -906,7 +905,7 @@ function SellerProfileRegistrationPage({ menu }: LayoutNavigationProps) {
                           )}
 
                           {/* Save Progress — steps 1 and 2 only */}
-                          {currentStep < 3 && (
+                          {/* {currentStep < 3 && (
                             <Button
                               variant="outlined" onClick={handleSave} disabled={isSaving}
                               startIcon={isSaving ? <CircularProgress size={20} /> : <SaveIcon />}
@@ -914,7 +913,7 @@ function SellerProfileRegistrationPage({ menu }: LayoutNavigationProps) {
                             >
                               {isSaving ? <Trans id="Saving..." /> : <Trans id="Save Progress" />}
                             </Button>
-                          )}
+                          )} */}
 
                           {currentStep < 3 ? (
                             <Button

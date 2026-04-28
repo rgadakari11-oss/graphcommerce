@@ -401,7 +401,12 @@ function ProductPage(props: Props) {
                       <Box
                         component="button"
                         type="button"
-                        onClick={() => setOrderQty(q => Math.max(minQty || 1, q - 1))}
+                        onClick={() =>
+                          setOrderQty(q => {
+                            const value = Number(q) || minQty || 1
+                            return Math.max(minQty || 1, value - 1)
+                          })
+                        }
                         sx={{
                           width: 32,
                           border: 'none',
@@ -445,7 +450,12 @@ function ProductPage(props: Props) {
                       <Box
                         component="button"
                         type="button"
-                        onClick={() => setOrderQty(q => q + 1)}
+                        onClick={() =>
+                          setOrderQty(q => {
+                            const value = Number(q) || minQty || 1
+                            return value + 1
+                          })
+                        }
                         sx={{
                           width: 32,
                           border: 'none',

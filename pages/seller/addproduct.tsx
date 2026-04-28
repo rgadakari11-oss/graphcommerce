@@ -168,6 +168,7 @@ function resolveSellerEmailFromStorage(): string | undefined {
   return undefined
 }
 
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ImageData {
@@ -207,11 +208,11 @@ function ProductCreatePage({ menu }: LayoutNavigationProps) {
   // ── Resolve seller id once on mount (client only) ─────────────────────────
   // We store in state so it's stable across renders and avoids SSR mismatch.
   const [sellerId, setSellerId] = useState<number | undefined>(undefined)
-
   const [sellerEmail, setSellerEmail] = useState<string | undefined>(undefined)
 
+
   useEffect(() => {
-    const id = getSellerId()   // client-only, localStorage is available here
+    const id = getSellerId()
     if (id) setSellerId(Number(id))
     setSellerEmail(resolveSellerEmailFromStorage())
   }, [])
@@ -428,7 +429,7 @@ function ProductCreatePage({ menu }: LayoutNavigationProps) {
       if (images.length === 0) { setSnackbar({ open: true, message: 'Please upload at least one image', severity: 'error' }); return }
       if (!sellerEmail) { setSnackbar({ open: true, message: 'Seller session expired. Please login again.', severity: 'error' }); return }
 
-      const generatedSku = `${productData.productCode || 'PROD'}-${Date.now()}`
+      const generatedSku = `${productData.productCode || 'QtyBiz'}-${Date.now()}`
       const formattedAttributes = Object.entries(attributeValues)
         .filter(([, value]) => value !== '' && value !== null && value !== undefined)
         .map(([attribute_code, value]) => ({ attribute_code, value: Array.isArray(value) ? value.join(',') : String(value) }))
@@ -989,9 +990,9 @@ function ProductCreatePage({ menu }: LayoutNavigationProps) {
                     Back
                   </Button>
                   <Stack direction="row" spacing={1}>
-                    <Button variant="outlined" size="small" disabled={isProcessing} sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569' }}>
+                    {/* <Button variant="outlined" size="small" disabled={isProcessing} sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569' }}>
                       Save Draft
-                    </Button>
+                    </Button> */}
                     <Button
                       variant="contained" size="small"
                       onClick={() => { activeStep === steps.length - 1 ? handlePublish() : handleNext() }}

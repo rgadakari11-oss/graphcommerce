@@ -109,7 +109,6 @@ function ProductListItemReal(props: ProductProps) {
 
   const sellerId = seller_id ? Number(seller_id) : undefined
   const { seller } = useProductSeller(sellerId)
-  console.log(seller)
 
   const AddToCartClient = dynamic(
     () =>

@@ -339,7 +339,7 @@ function ProductCreateaddPage() {
                             Drag & drop or click to browse • PNG, JPG
                           </Typography>
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                            Recommended: 500×500 pixels • Max file size: 500 KB per image
+                            Recommended: 500×500 pixels • Max file size: 1 MB per image
                           </Typography>
                         </Box>
 
