@@ -13,10 +13,6 @@ import {
   Stepper,
   Step,
   StepLabel,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Chip,
   IconButton,
   Stack,
@@ -31,6 +27,7 @@ import {
   DialogActions,
   CircularProgress,
   Snackbar,
+  Skeleton,
   Autocomplete,
 } from '@mui/material'
 import {
@@ -44,7 +41,7 @@ import {
   ArrowBack,
   CheckCircle,
 } from '@mui/icons-material'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   CustomerDocument,
   WaitForCustomer,
@@ -56,9 +53,11 @@ import { SellerAccountLayout } from '../../components/account/Selleraccountlayou
 import { graphqlSharedClient, graphqlSsrClient } from '../../lib/graphql/graphqlSsrClient'
 import { cacheFirst } from '@graphcommerce/graphql'
 import { gql, useMutation, useQuery } from '@apollo/client'
-
 import { ImageUploadManager } from '../../components/seller/ImageUploadManager'
 import { ProductQualityScore } from '../../components/seller/ProductQualityScore'
+import { CategoryMultiSelect } from '../../components/seller/CategoryMultiSelect'
+import type { MainCategory } from '../../components/seller/CategoryMultiSelect'
+import { getSellerId } from '../../lib/utils/getMobileNumber'
 
 type Props = Record<string, unknown>
 type GetPageStaticProps = GetStaticProps<LayoutNavigationProps, Props>
@@ -70,11 +69,7 @@ const CREATE_PRODUCT_MUTATION = gql`
     createProduct(input: $input) {
       success
       message
-      product {
-        id
-        sku
-        name
-      }
+      product { id sku name }
       errors
     }
   }
@@ -85,33 +80,93 @@ const UPLOAD_PRODUCT_IMAGE_MUTATION = gql`
     uploadProductImage(sku: $sku, images: $images) {
       success
       message
-      files {
-        file_path
-        full_url
-        type
-      }
+      files { file_path full_url type }
     }
   }
 `
 
-/**
- * Fetch all selectable options for the `unit_of_measurement` custom attribute.
- * Identical query to the edit page so Apollo can share the cache entry.
- */
 const GET_UNIT_OPTIONS_QUERY = gql`
   query GetUnitOfMeasurementOptions {
     customAttributeMetadata(
       attributes: [{ entity_type: "catalog_product", attribute_code: "unit_of_measurement" }]
     ) {
       items {
-        attribute_options {
-          label
-          value
-        }
+        attribute_options { label value }
       }
     }
   }
 `
+
+const GET_CATEGORY_ATTRIBUTES_QUERY = gql`
+  query GetCategoryAttributes($categoryIds: [Int!]!) {
+    getCategoryAttributes(category_ids: $categoryIds) {
+      attribute_id
+      attribute_code
+      label
+      backend_type
+      input_type
+      attribute_group
+      sort_order
+      options { label value }
+    }
+  }
+`
+
+const GET_SELLER_BUSINESS_CATEGORIES_QUERY = gql`
+  query GetSellerBusinessCategories($seller_id: Int!) {
+    getSellerBusinessCategories(seller_id: $seller_id) {
+      seller_id
+      businesscategories
+    }
+  }
+`
+
+// ─── Seller ID resolution ─────────────────────────────────────────────────────
+// Tries multiple sources in order to find a numeric seller / customer id.
+// Source 1: seller-auth key  { seller_id, customer_id, id, email, ... }
+// Source 2: any other localStorage key that contains seller_id / customer_id
+// Returns undefined when nothing is found so the query is safely skipped.
+
+function resolveSellerIdFromStorage(): number | undefined {
+  if (typeof window === 'undefined') return undefined
+
+  // ── Check all localStorage keys for a numeric id ─────────────────────────
+  const candidates = ['seller-auth', 'seller_auth', 'sellerAuth', 'seller-data', 'sellerData']
+
+  for (const key of candidates) {
+    try {
+      const raw = localStorage.getItem(key)
+      if (!raw) continue
+      const parsed = JSON.parse(raw)
+      // Try common field names
+      const id =
+        parsed?.seller_id ??
+        parsed?.customer_id ??
+        parsed?.customerId ??
+        parsed?.sellerId ??
+        parsed?.id
+      if (id) return parseInt(String(id), 10) || undefined
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  return undefined
+}
+
+function resolveSellerEmailFromStorage(): string | undefined {
+  if (typeof window === 'undefined') return undefined
+  const candidates = ['seller-auth', 'seller_auth', 'sellerAuth', 'seller-data', 'sellerData']
+  for (const key of candidates) {
+    try {
+      const raw = localStorage.getItem(key)
+      if (!raw) continue
+      const parsed = JSON.parse(raw)
+      if (parsed?.email) return parsed.email as string
+    } catch { /* ignore */ }
+  }
+  return undefined
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -126,97 +181,109 @@ interface UnitOption {
   value: string
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const SELLER_AUTH_KEY = 'seller-auth'
-
-type SellerAuth = {
-  email: string
-  is_seller: boolean
+interface AttributeOption {
+  label: string
+  value: string
 }
 
-const getSellerEmailFromLocalStorage = (): string | null => {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = localStorage.getItem(SELLER_AUTH_KEY)
-    if (!raw) return null
-    const parsed: SellerAuth = JSON.parse(raw)
-    return parsed.email || null
-  } catch {
-    return null
-  }
+interface CategoryAttribute {
+  attribute_id: number
+  attribute_code: string
+  label: string
+  backend_type: string
+  input_type: 'select' | 'text' | 'multiselect' | string
+  attribute_group: string
+  sort_order: number
+  options: AttributeOption[]
 }
-
-const categories = [
-  {
-    id: 'electronics',
-    name: 'Electronics & Electrical',
-    subCategories: [
-      { id: 'mobile', name: 'Mobile Phones & Accessories' },
-      { id: 'computer', name: 'Computer & Laptop' },
-      { id: 'camera', name: 'Camera & Photography' },
-      { id: 'home-appliances', name: 'Home Appliances' },
-    ],
-  },
-  {
-    id: 'fashion',
-    name: 'Fashion & Apparel',
-    subCategories: [
-      { id: 'mens-clothing', name: "Men's Clothing" },
-      { id: 'womens-clothing', name: "Women's Clothing" },
-      { id: 'kids-clothing', name: "Kids' Clothing" },
-      { id: 'footwear', name: 'Footwear' },
-    ],
-  },
-  {
-    id: 'home',
-    name: 'Home & Furniture',
-    subCategories: [
-      { id: 'furniture', name: 'Furniture' },
-      { id: 'home-decor', name: 'Home Decor' },
-      { id: 'kitchen', name: 'Kitchen & Dining' },
-      { id: 'bedding', name: 'Bedding & Bath' },
-    ],
-  },
-  {
-    id: 'industrial',
-    name: 'Industrial & Manufacturing',
-    subCategories: [
-      { id: 'machinery', name: 'Machinery & Equipment' },
-      { id: 'tools', name: 'Tools & Hardware' },
-      { id: 'raw-materials', name: 'Raw Materials' },
-      { id: 'packaging', name: 'Packaging Materials' },
-    ],
-  },
-]
 
 const steps = ['Product Details', 'Specifications', 'Review & Publish']
 
 // ─── Page Component ───────────────────────────────────────────────────────────
 
-function ProductCreatePage() {
-  const customerQuery = useCustomerQuery(CustomerDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+function ProductCreatePage({ menu }: LayoutNavigationProps) {
+  const customerQuery = useCustomerQuery(CustomerDocument, { fetchPolicy: 'cache-and-network' })
 
-  const [createProduct, { loading: isCreating }] = useMutation(CREATE_PRODUCT_MUTATION)
-  const [uploadProductImageMutation, { loading: isUploadingImages }] = useMutation(
-    UPLOAD_PRODUCT_IMAGE_MUTATION
+  // ── Resolve seller id once on mount (client only) ─────────────────────────
+  // We store in state so it's stable across renders and avoids SSR mismatch.
+  const [sellerId, setSellerId] = useState<number | undefined>(undefined)
+
+  const [sellerEmail, setSellerEmail] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    const id = getSellerId()   // client-only, localStorage is available here
+    if (id) setSellerId(Number(id))
+    setSellerEmail(resolveSellerEmailFromStorage())
+  }, [])
+
+
+  // ── All main-categories from layout menu ──────────────────────────────────
+  const allMainCategories: MainCategory[] = useMemo(
+    () => (menu?.items?.[0]?.children ?? []) as MainCategory[],
+    [menu],
   )
 
-  // Fetch unit_of_measurement attribute options (cache-first — options rarely change)
+  // ── Fetch seller's registered business categories ─────────────────────────
+  const {
+    data: businessCategoryData,
+    loading: businessCategoriesLoading,
+    error: businessCategoriesError,
+  } = useQuery(GET_SELLER_BUSINESS_CATEGORIES_QUERY, {
+    variables: { seller_id: sellerId },
+    // Only skip if we definitely have no id yet (still resolving or truly absent)
+    skip: sellerId === undefined || sellerId === null || isNaN(sellerId),
+    fetchPolicy: 'cache-first',
+    notifyOnNetworkStatusChange: true,
+
+  })
+
+  // Array of names the seller registered with
+  const sellerBusinessCategoryNames: string[] = useMemo(
+    () => businessCategoryData?.getSellerBusinessCategories?.businesscategories ?? [],
+    [businessCategoryData],
+  )
+
+  // ── Filter allMainCategories to only the seller's segments ────────────────
+  // Normalise both sides to lowercase + trim for a resilient match.
+  const mainCategories: MainCategory[] = useMemo(() => {
+    // If the query hasn't resolved yet, show nothing (skeleton shown below)
+    // If the query errored or returned empty list, fall back to all categories
+    if (businessCategoriesLoading) return []
+
+    if (!sellerBusinessCategoryNames.length) {
+      // Either no query was made (no sellerId) or API returned empty — show all
+      return allMainCategories
+    }
+
+    const normalised = new Set(
+      sellerBusinessCategoryNames.map((n) => n.trim().toLowerCase()),
+    )
+
+    const filtered = allMainCategories.filter((cat) =>
+      normalised.has(cat.name.trim().toLowerCase()),
+    )
+
+    // Safety: if nothing matched at all, fall back to all so the seller
+    // isn't stuck with an empty dropdown
+    return filtered.length > 0 ? filtered : allMainCategories
+  }, [allMainCategories, sellerBusinessCategoryNames, businessCategoriesLoading])
+
+  // ── Mutations ─────────────────────────────────────────────────────────────
+  const [createProduct, { loading: isCreating }] = useMutation(CREATE_PRODUCT_MUTATION)
+  const [uploadProductImageMutation, { loading: isUploadingImages }] = useMutation(UPLOAD_PRODUCT_IMAGE_MUTATION)
+
+  // ── Unit options ──────────────────────────────────────────────────────────
   const { data: unitOptionsData, loading: unitOptionsLoading } = useQuery(GET_UNIT_OPTIONS_QUERY, {
     fetchPolicy: 'cache-first',
   })
 
-  // Derive the list of predefined unit options
   const predefinedUnitOptions: UnitOption[] = useMemo(() => {
     const items = unitOptionsData?.customAttributeMetadata?.items ?? []
     if (!items.length) return []
     return (items[0]?.attribute_options ?? []) as UnitOption[]
   }, [unitOptionsData])
 
-  // ── Form state ────────────────────────────────────────────────────────────────
+  // ── Form state ────────────────────────────────────────────────────────────
   const [activeStep, setActiveStep] = useState(0)
   const [productData, setProductData] = useState({
     name: '',
@@ -224,71 +291,111 @@ function ProductCreatePage() {
     specialPrice: '',
     specialPriceFrom: '',
     specialPriceTo: '',
-    // unitText holds the human-readable label (e.g. "Kilogram") — sent to API as-is
     unitText: '',
     description: '',
     minOrderQty: '',
-    productionCapacity: '',
     productCode: '',
     deliveryTime: '',
     packagingDetails: '',
   })
 
   const [images, setImages] = useState<ImageData[]>([])
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [selectedSubCategory, setSelectedSubCategory] = useState('')
+  const [selectedCategoryUids, setSelectedCategoryUids] = useState<string[]>([])
+  const [attributeValues, setAttributeValues] = useState<Record<string, string>>({})
   const [categoryRequestOpen, setCategoryRequestOpen] = useState(false)
   const [requestedCategory, setRequestedCategory] = useState('')
+  const [errors, setErrors] = useState({ name: false, images: false, price: false, category: false })
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'info' })
 
-  const [errors, setErrors] = useState({
-    name: false,
-    images: false,
-    price: false,
-    category: false,
-  })
+  // ── Decode selected uids to numeric category ids ──────────────────────────
+  const selectedCategoryIds = useMemo(
+    () =>
+      selectedCategoryUids
+        .map((uid) => { try { return parseInt(atob(uid), 10) } catch { return parseInt(uid, 10) } })
+        .filter(Boolean),
+    [selectedCategoryUids],
+  )
 
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success' as 'success' | 'error' | 'info',
-  })
+  // ── Category attributes ───────────────────────────────────────────────────
+  const { data: categoryAttributesData, loading: categoryAttributesLoading } = useQuery(
+    GET_CATEGORY_ATTRIBUTES_QUERY,
+    { variables: { categoryIds: selectedCategoryIds }, skip: selectedCategoryIds.length === 0, fetchPolicy: 'cache-first' },
+  )
 
-  // ── Helpers ───────────────────────────────────────────────────────────────────
+  const categoryAttributes: CategoryAttribute[] = useMemo(() => {
+    const attrs: CategoryAttribute[] = categoryAttributesData?.getCategoryAttributes ?? []
+    const seen = new Set<string>()
+    return attrs
+      .filter((a) => { if (seen.has(a.attribute_code)) return false; seen.add(a.attribute_code); return true })
+      .sort((a, b) => a.sort_order - b.sort_order)
+  }, [categoryAttributesData])
+
+  const attributesByGroup = useMemo(() => {
+    const groups: Record<string, CategoryAttribute[]> = {}
+    for (const attr of categoryAttributes) {
+      const g = attr.attribute_group || 'General'
+      if (!groups[g]) groups[g] = []
+      groups[g].push(attr)
+    }
+    return groups
+  }, [categoryAttributes])
+
+  const attributeSetName = useMemo(() => {
+    if (!selectedCategoryUids.length || !mainCategories.length) return undefined
+    const selectedSet = new Set(selectedCategoryUids)
+    for (const main of mainCategories) {
+      if (selectedSet.has(main.uid)) return main.name
+      for (const sub of main.children ?? []) {
+        if (selectedSet.has(sub.uid)) return main.name
+        for (const mc of sub.children ?? []) {
+          if (selectedSet.has(mc.uid)) return main.name
+        }
+      }
+    }
+    return undefined
+  }, [selectedCategoryUids, mainCategories])
+
+  useEffect(() => { window.scrollTo({ top: 20, behavior: 'smooth' }) }, [activeStep])
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  const findCategoryName = (uid: string): string => {
+    for (const m of mainCategories) {
+      if (m.uid === uid) return m.name
+      for (const s of m.children ?? []) {
+        if (s.uid === uid) return s.name
+        for (const mc of s.children ?? []) {
+          if (mc.uid === uid) return mc.name
+        }
+      }
+    }
+    return uid
+  }
 
   const validateStep = (step: number) => {
     const newErrors = { name: false, images: false, price: false, category: false }
     if (step === 0) {
-      if (productData.name.trim().split(' ').filter((w) => w.length > 0).length < 3)
-        newErrors.name = true
+      if (productData.name.trim().split(' ').filter((w) => w.length > 0).length < 3) newErrors.name = true
       if (images.length === 0) newErrors.images = true
       if (!productData.price || parseFloat(productData.price) <= 0) newErrors.price = true
-      if (!selectedCategory) newErrors.category = true
+      if (selectedCategoryUids.length === 0) newErrors.category = true
     }
     setErrors(newErrors)
     return !Object.values(newErrors).some(Boolean)
   }
 
-  const handleNext = () => {
-    if (validateStep(activeStep)) setActiveStep((p) => Math.min(p + 1, steps.length - 1))
-  }
-
-  const handleBack = () => {
-    setErrors({ name: false, images: false, price: false, category: false })
-    setActiveStep((p) => Math.max(p - 1, 0))
-  }
+  const handleNext = () => { if (validateStep(activeStep)) setActiveStep((p) => Math.min(p + 1, steps.length - 1)) }
+  const handleBack = () => { setErrors({ name: false, images: false, price: false, category: false }); setActiveStep((p) => Math.max(p - 1, 0)) }
 
   const handleInputChange =
     (field: string) =>
       (event: React.ChangeEvent<HTMLInputElement | { value: unknown }>) => {
         const val = event.target.value as string
         setProductData((prev) => ({ ...prev, [field]: val }))
-        if (field === 'name' && errors.name) {
-          if (val.trim().split(' ').filter((w) => w.length > 0).length >= 3)
-            setErrors((e) => ({ ...e, name: false }))
-        }
-        if (field === 'price' && errors.price) {
-          if (parseFloat(val) > 0) setErrors((e) => ({ ...e, price: false }))
-        }
+        if (field === 'name' && errors.name && val.trim().split(' ').filter((w) => w.length > 0).length >= 3)
+          setErrors((e) => ({ ...e, name: false }))
+        if (field === 'price' && errors.price && parseFloat(val) > 0)
+          setErrors((e) => ({ ...e, price: false }))
       }
 
   const handleCategoryRequest = () => {
@@ -309,96 +416,75 @@ function ProductCreatePage() {
     const imageInputs = await Promise.all(
       images.map(async (image, index) => {
         if (!image.file) throw new Error('Image file is missing')
-        return {
-          filename: image.file.name,
-          base64_content: await fileToBase64(image.file),
-          type: index === 0 ? 'image' : 'gallery',
-        }
-      })
+        return { filename: image.file.name, base64_content: await fileToBase64(image.file), type: index === 0 ? 'image' : 'gallery' }
+      }),
     )
-
     const { data } = await uploadProductImageMutation({ variables: { sku, images: imageInputs } })
-
-    if (!data?.uploadProductImage?.success) {
-      throw new Error(data?.uploadProductImage?.message || 'Failed to upload images')
-    }
+    if (!data?.uploadProductImage?.success) throw new Error(data?.uploadProductImage?.message || 'Failed to upload images')
   }
 
   const handlePublish = async () => {
     try {
-      if (images.length === 0) {
-        setSnackbar({ open: true, message: 'Please upload at least one image', severity: 'error' })
-        return
-      }
-
-      const sellerEmail = getSellerEmailFromLocalStorage()
-      if (!sellerEmail) {
-        setSnackbar({ open: true, message: 'Seller session expired. Please login again.', severity: 'error' })
-        return
-      }
+      if (images.length === 0) { setSnackbar({ open: true, message: 'Please upload at least one image', severity: 'error' }); return }
+      if (!sellerEmail) { setSnackbar({ open: true, message: 'Seller session expired. Please login again.', severity: 'error' }); return }
 
       const generatedSku = `${productData.productCode || 'PROD'}-${Date.now()}`
+      const formattedAttributes = Object.entries(attributeValues)
+        .filter(([, value]) => value !== '' && value !== null && value !== undefined)
+        .map(([attribute_code, value]) => ({ attribute_code, value: Array.isArray(value) ? value.join(',') : String(value) }))
 
-      const input = {
+      const input: Record<string, unknown> = {
         sku: generatedSku,
         name: productData.name,
         price: parseFloat(productData.price),
         attribute_set_id: 4,
-        inventory: {
-          qty: productData.minOrderQty ? parseInt(productData.minOrderQty, 10) : 100,
-          is_in_stock: true,
-        },
+        inventory: { qty: productData.minOrderQty ? parseInt(productData.minOrderQty, 10) : 100, is_in_stock: true },
         description: productData.description || undefined,
         seller_id: sellerEmail,
         special_price: productData.specialPrice ? parseFloat(productData.specialPrice) : undefined,
-        // mqa — minimum order quantity as string (matches Postman / API expectation)
+        special_from_date: productData.specialPriceFrom || undefined,
+        special_to_date: productData.specialPriceTo || undefined,
         mqa: productData.minOrderQty || undefined,
-        // unit_of_measurement — always the human-readable label, never an option id
         unit_of_measurement: productData.unitText || undefined,
+        ...(selectedCategoryUids.length ? {
+          categories: selectedCategoryUids.map((uid) => { try { return parseInt(atob(uid), 10) } catch { return parseInt(uid, 10) } }),
+        } : {}),
+        ...(attributeSetName ? { attribute_set: attributeSetName } : {}),
+        ...(formattedAttributes.length > 0 ? { custom_attributes: formattedAttributes } : {}),
       }
 
       setSnackbar({ open: true, message: 'Creating product...', severity: 'info' })
-
       const { data: createProductData } = await createProduct({ variables: { input } })
 
       if (!createProductData?.createProduct?.success) {
-        const errorMessages = createProductData?.createProduct?.errors?.join(', ') || 'Failed to create product'
-        throw new Error(errorMessages)
+        throw new Error(createProductData?.createProduct?.errors?.join(', ') || 'Failed to create product')
       }
 
-      const createdSku = createProductData.createProduct.product.sku
-
       setSnackbar({ open: true, message: 'Product created! Uploading images...', severity: 'info' })
-      await uploadImagesWithBase64(createdSku)
-
-      setSnackbar({
-        open: true,
-        message: `Product created successfully! ${images.length} image(s) uploaded.`,
-        severity: 'success',
-      })
-
+      await uploadImagesWithBase64(createProductData.createProduct.product.sku)
+      setSnackbar({ open: true, message: `Product created successfully! ${images.length} image(s) uploaded.`, severity: 'success' })
       setTimeout(() => { window.location.href = '/seller/products' }, 2000)
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error instanceof Error ? error.message : 'An error occurred while creating the product. Please try again.',
-        severity: 'error',
-      })
+      setSnackbar({ open: true, message: error instanceof Error ? error.message : 'An error occurred. Please try again.', severity: 'error' })
     }
   }
 
   const isProcessing = isCreating || isUploadingImages
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // Category section loading = either business-cats are resolving OR sellerId not yet set
+  // (sellerId state starts as undefined, gets set in useEffect on mount)
+  const categoryLoading = businessCategoriesLoading || (sellerId === undefined && sellerEmail === undefined)
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <>
-      <PageMeta title={i18n._(/* i18n */ 'Add New Product')} metaRobots={['noindex']} />
+      <PageMeta title={i18n._('Add New Product')} metaRobots={['noindex']} />
 
       <SellerAccountLayout>
         <WaitForCustomer waitFor={customerQuery}>
 
-          {/* Header */}
+          {/* ── Header ── */}
           <Box sx={{ mb: 3 }}>
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
               <IconButton href="/seller/products" sx={{ bgcolor: '#f1f5f9', '&:hover': { bgcolor: '#e2e8f0' } }}>
@@ -428,11 +514,10 @@ function ProductCreatePage() {
           </Box>
 
           <Grid container spacing={3}>
-            {/* Main Content */}
-            <Grid item xs={12} lg={8}>
+            <Grid item xs={12} md={8}>
               <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e2e8f0', overflow: 'hidden', bgcolor: '#ffffff' }}>
 
-                {/* ── Step 0: Product Details ── */}
+                {/* ════ STEP 0 — Product Details ════ */}
                 {activeStep === 0 && (
                   <Box sx={{ p: 3 }}>
                     <Stack spacing={3}>
@@ -445,7 +530,7 @@ function ProductCreatePage() {
                           </Typography>
                           <Box component="ul" sx={{ pl: 2, mb: 0 }}>
                             {errors.name && <li>Product Name (minimum 3 words)</li>}
-                            {errors.category && <li>Product Category</li>}
+                            {errors.category && <li>Product Category (select at least one)</li>}
                             {errors.images && <li>Product Images (at least 1 image)</li>}
                             {errors.price && <li>Regular Price</li>}
                           </Box>
@@ -474,66 +559,81 @@ function ProductCreatePage() {
                         )}
                       </Box>
 
-                      {/* Category Selection */}
+                      {/* ── Categories ── */}
                       <Box>
                         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
                           <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Category sx={{ color: '#3b82f6', fontSize: 20 }} />
-                            Product Category *
+                            Product Categories *
                           </Typography>
-                          <Button size="small" startIcon={<Add />} onClick={() => setCategoryRequestOpen(true)} sx={{ textTransform: 'none', fontSize: '0.8rem', color: '#3b82f6', fontWeight: 600 }}>
-                            Add Category
-                          </Button>
+                          {/* <Button
+                            size="small" startIcon={<Add />}
+                            onClick={() => setCategoryRequestOpen(true)}
+                            sx={{ textTransform: 'none', fontSize: '0.8rem', color: '#3b82f6', fontWeight: 600 }}
+                          >
+                            Request Category
+                          </Button> */}
                         </Stack>
-                        <Stack spacing={2}>
-                          <FormControl fullWidth size="small" error={errors.category}>
-                            <InputLabel>Main Category</InputLabel>
-                            <Select
-                              value={selectedCategory}
-                              onChange={(e) => {
-                                setSelectedCategory(e.target.value)
-                                setSelectedSubCategory('')
-                                if (errors.category && e.target.value) setErrors((err) => ({ ...err, category: false }))
+
+                        {/* Skeleton while resolving seller id / fetching business categories */}
+                        {categoryLoading ? (
+                          <Stack spacing={1}>
+                            <Skeleton variant="rectangular" height={42} sx={{ borderRadius: 1 }} />
+                            <Stack direction="row" spacing={1}>
+                              <Skeleton variant="rounded" width={180} height={22} />
+                              <Skeleton variant="rounded" width={220} height={22} />
+                            </Stack>
+                          </Stack>
+                        ) : (
+                          <>
+                            {/* Info banner — only when filtering is active */}
+                            {/* {sellerBusinessCategoryNames.length > 0 && mainCategories.length < allMainCategories.length && (
+                              <Box sx={{ mb: 1.5, px: 1.5, py: 1, bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 1.5, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                                <Info sx={{ fontSize: 15, color: '#3b82f6', mt: 0.2, flexShrink: 0 }} />
+                                <Box>
+                                  <Typography variant="caption" sx={{ color: '#1d4ed8', fontWeight: 600, display: 'block', mb: 0.5 }}>
+                                    Showing your registered business categories only
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {sellerBusinessCategoryNames.map((name) => (
+                                      <Chip
+                                        key={name} label={name} size="small"
+                                        sx={{ height: 20, fontSize: '0.68rem', fontWeight: 600, bgcolor: '#dbeafe', color: '#1d4ed8', border: '1px solid #bfdbfe' }}
+                                      />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              </Box>
+                            )} */}
+
+                            <CategoryMultiSelect
+                              categories={mainCategories}
+                              selectedUids={selectedCategoryUids}
+                              onChange={(uids) => {
+                                setSelectedCategoryUids(uids)
+                                if (uids.length > 0) setErrors((e) => ({ ...e, category: false }))
                               }}
-                              label="Main Category"
-                            >
-                              {categories.map((cat) => (
-                                <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
-                              ))}
-                            </Select>
-                            {errors.category && (
-                              <Typography variant="caption" sx={{ color: '#ef4444', mt: 0.5, ml: 1.5 }}>
-                                Please select a category for your product
-                              </Typography>
-                            )}
-                          </FormControl>
+                              loading={false}
+                              error={errors.category}
+                              errorMessage="Please select at least one category"
+                              placeholder="Click to browse and select product categories..."
+                            />
 
-                          {selectedCategory && (
-                            <FormControl fullWidth size="small">
-                              <InputLabel>Sub Category</InputLabel>
-                              <Select value={selectedSubCategory} onChange={(e) => setSelectedSubCategory(e.target.value)} label="Sub Category">
-                                {categories.find((c) => c.id === selectedCategory)?.subCategories.map((sub) => (
-                                  <MenuItem key={sub.id} value={sub.id}>{sub.name}</MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          )}
-
-                          <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-                            Can't find your category?{' '}
-                            <Typography
-                              component="span"
-                              variant="caption"
-                              sx={{ color: '#3b82f6', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-                              onClick={() => setCategoryRequestOpen(true)}
-                            >
-                              Request to add new category
+                            <Typography variant="caption" color="text.secondary" sx={{ pl: 1, mt: 0.5, display: 'block' }}>
+                              Expand any category to select sub-categories and micro-categories.{' '}
+                              {/* <Typography
+                                component="span" variant="caption"
+                                sx={{ color: '#3b82f6', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+                                onClick={() => setCategoryRequestOpen(true)}
+                              >
+                                Can't find yours? Request it.
+                              </Typography> */}
                             </Typography>
-                          </Typography>
-                        </Stack>
+                          </>
+                        )}
                       </Box>
 
-                      {/* Image Upload */}
+                      {/* Images */}
                       <ImageUploadManager
                         images={images}
                         setImages={setImages}
@@ -542,90 +642,54 @@ function ProductCreatePage() {
                         setSnackbar={setSnackbar}
                       />
 
-                      {/* ── Pricing ── */}
+                      {/* Pricing */}
                       <Box>
                         <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                           <TrendingUp sx={{ color: '#3b82f6', fontSize: 20 }} />
                           Pricing Information *
                         </Typography>
                         <Stack spacing={2.5}>
-
-                          {/* Regular price + unit */}
                           <Box>
                             <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>Regular Price</Typography>
                             <Grid container spacing={2} alignItems="flex-start">
-
-                              {/* Price */}
                               <Grid item xs={12} sm={5}>
                                 <TextField
-                                  fullWidth
-                                  label="Price"
-                                  placeholder="0.00"
-                                  value={productData.price}
-                                  onChange={handleInputChange('price')}
-                                  type="number"
-                                  size="small"
-                                  error={errors.price}
+                                  fullWidth label="Price" placeholder="0.00"
+                                  value={productData.price} onChange={handleInputChange('price')}
+                                  type="number" size="small" error={errors.price}
                                   helperText={errors.price ? 'Price is required and must be greater than 0' : ''}
-                                  InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+                                  InputProps={{ startAdornment: <InputAdornment position="start">Rs.</InputAdornment> }}
                                 />
                               </Grid>
-
-                              {/* Unit of Measurement — fetched from attribute, freeSolo for custom values */}
                               <Grid item xs={12} sm={7}>
                                 <Autocomplete
-                                  freeSolo
-                                  size="small"
-                                  options={predefinedUnitOptions}
+                                  freeSolo size="small" options={predefinedUnitOptions}
                                   getOptionLabel={(opt) => (typeof opt === 'string' ? opt : opt.label)}
                                   inputValue={productData.unitText}
-                                  // Dropdown selection → store label text
                                   onChange={(_e, newValue) => {
-                                    const label =
-                                      newValue == null
-                                        ? ''
-                                        : typeof newValue === 'string'
-                                          ? newValue
-                                          : newValue.label
+                                    const label = newValue == null ? '' : typeof newValue === 'string' ? newValue : newValue.label
                                     setProductData((prev) => ({ ...prev, unitText: label }))
                                   }}
-                                  // Free typing → update unitText directly
                                   onInputChange={(_e, newInputValue, reason) => {
-                                    if (reason !== 'reset') {
-                                      setProductData((prev) => ({ ...prev, unitText: newInputValue }))
-                                    }
+                                    if (reason !== 'reset') setProductData((prev) => ({ ...prev, unitText: newInputValue }))
                                   }}
                                   loading={unitOptionsLoading}
                                   renderInput={(params) => (
                                     <TextField
-                                      {...params}
-                                      label="Unit of Measurement"
-                                      placeholder="e.g. Piece, Kg, Litre…"
+                                      {...params} label="Unit of Measurement"
+                                      placeholder="e.g. Piece, Kg, Litre..."
                                       helperText="Select from the list or type a custom unit"
                                       InputProps={{
                                         ...params.InputProps,
-                                        endAdornment: (
-                                          <>
-                                            {unitOptionsLoading && <CircularProgress color="inherit" size={14} />}
-                                            {params.InputProps.endAdornment}
-                                          </>
-                                        ),
+                                        endAdornment: <>{unitOptionsLoading && <CircularProgress color="inherit" size={14} />}{params.InputProps.endAdornment}</>,
                                       }}
                                     />
                                   )}
-                                  renderOption={(props, option) => (
-                                    <li {...props} key={option.value}>{option.label}</li>
-                                  )}
-                                  // Inject "Add <value>" option for custom entries
+                                  renderOption={(props, option) => <li {...props} key={option.value}>{option.label}</li>}
                                   filterOptions={(options, params) => {
-                                    const filtered = options.filter((o) =>
-                                      o.label.toLowerCase().includes(params.inputValue.toLowerCase())
-                                    )
+                                    const filtered = options.filter((o) => o.label.toLowerCase().includes(params.inputValue.toLowerCase()))
                                     const inputValue = params.inputValue.trim()
-                                    const alreadyExists = options.some(
-                                      (o) => o.label.toLowerCase() === inputValue.toLowerCase()
-                                    )
-                                    if (inputValue && !alreadyExists) {
+                                    if (inputValue && !options.some((o) => o.label.toLowerCase() === inputValue.toLowerCase())) {
                                       filtered.push({ label: `Add "${inputValue}"`, value: `__custom__${inputValue}` })
                                     }
                                     return filtered
@@ -636,55 +700,60 @@ function ProductCreatePage() {
                             </Grid>
                           </Box>
 
-                          {/* Minimum Order Quantity (mqa) — moved from Specifications */}
                           <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                              Minimum Order Quantity
-                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>Minimum Order Quantity</Typography>
                             <Grid container spacing={2}>
                               <Grid item xs={12} sm={5}>
                                 <TextField
-                                  fullWidth
-                                  label="Min. Order Qty"
-                                  placeholder="e.g. 50"
-                                  value={productData.minOrderQty}
-                                  onChange={handleInputChange('minOrderQty')}
-                                  type="number"
-                                  size="small"
-                                  InputProps={{
-                                    endAdornment: productData.unitText ? (
-                                      <InputAdornment position="end">{productData.unitText}</InputAdornment>
-                                    ) : undefined,
-                                  }}
+                                  fullWidth label="Min. Order Qty" placeholder="e.g. 50"
+                                  value={productData.minOrderQty} onChange={handleInputChange('minOrderQty')}
+                                  type="number" size="small"
+                                  InputProps={{ endAdornment: productData.unitText ? <InputAdornment position="end">{productData.unitText}</InputAdornment> : undefined }}
                                   helperText="Minimum quantity a buyer must order"
                                 />
                               </Grid>
                             </Grid>
                           </Box>
 
-                          {/* Special Price */}
                           <Box>
                             <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>Special Price (Optional)</Typography>
                             <Grid container spacing={2}>
                               <Grid item xs={12}>
                                 <TextField
-                                  fullWidth
-                                  label="Special Price"
-                                  placeholder="0.00"
-                                  value={productData.specialPrice}
-                                  onChange={handleInputChange('specialPrice')}
-                                  type="number"
-                                  size="small"
-                                  InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+                                  fullWidth label="Special Price" placeholder="0.00"
+                                  value={productData.specialPrice} onChange={handleInputChange('specialPrice')}
+                                  type="number" size="small"
+                                  InputProps={{ startAdornment: <InputAdornment position="start">Rs.</InputAdornment> }}
                                   helperText="Offer a discounted price for a limited time"
                                 />
                               </Grid>
                               <Grid item xs={12} sm={6}>
-                                <TextField fullWidth label="Special Price From" placeholder="DD/MM/YYYY" value={productData.specialPriceFrom} onChange={handleInputChange('specialPriceFrom')} size="small" helperText="Start date for special price" />
+
+                                <TextField
+                                  fullWidth label="Special Price From" size="small"
+                                  type="date"
+                                  value={productData.specialPriceFrom}
+                                  onChange={handleInputChange('specialPriceFrom')}
+                                  inputProps={{ min: new Date().toISOString().split('T')[0] }}
+                                  InputLabelProps={{ shrink: true }}
+                                  helperText="Start date for special price"
+                                />
                               </Grid>
                               <Grid item xs={12} sm={6}>
-                                <TextField fullWidth label="Special Price To" placeholder="DD/MM/YYYY" value={productData.specialPriceTo} onChange={handleInputChange('specialPriceTo')} size="small" helperText="End date for special price" />
+                                <TextField
+                                  fullWidth label="Special Price To" size="small"
+                                  type="date"
+                                  value={productData.specialPriceTo}
+                                  onChange={handleInputChange('specialPriceTo')}
+                                  inputProps={{
+                                    min: productData.specialPriceFrom || new Date().toISOString().split('T')[0],
+                                  }}
+                                  InputLabelProps={{ shrink: true }}
+                                  helperText="End date for special price"
+                                />
+
                               </Grid>
+
                             </Grid>
                           </Box>
                         </Stack>
@@ -699,11 +768,8 @@ function ProductCreatePage() {
                         <TextField
                           fullWidth
                           placeholder="Provide a detailed description including features, benefits, materials, and use cases..."
-                          value={productData.description}
-                          onChange={handleInputChange('description')}
-                          multiline
-                          rows={5}
-                          size="small"
+                          value={productData.description} onChange={handleInputChange('description')}
+                          multiline rows={5} size="small"
                         />
                         <Stack direction="row" justifyContent="space-between" sx={{ mt: 0.5 }}>
                           <Typography variant="caption" color="text.secondary">Minimum 100 characters recommended</Typography>
@@ -716,48 +782,102 @@ function ProductCreatePage() {
                   </Box>
                 )}
 
-                {/* ── Step 1: Specifications ── (minOrderQty moved to Pricing) */}
+                {/* ════ STEP 1 — Specifications ════ */}
                 {activeStep === 1 && (
                   <Box sx={{ p: 3 }}>
                     <Stack spacing={3}>
                       <Alert severity="info" icon={<Info />} sx={{ fontSize: '0.875rem' }}>
                         Additional details help buyers make informed decisions and improve your product ranking
                       </Alert>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                          <TextField
-                            fullWidth
-                            label="Production Capacity"
-                            placeholder="e.g., 5000 units/month"
-                            value={productData.productionCapacity}
-                            onChange={handleInputChange('productionCapacity')}
-                            size="small"
-                          />
-                        </Grid>
-                      </Grid>
+
+                      {/* <TextField
+                        fullWidth label="Production Capacity" placeholder="e.g., 5000 units/month" size="small"
+                        value={productData.productionCapacity} onChange={handleInputChange('productionCapacity')}
+                      /> */}
+
                       <TextField
-                        fullWidth
-                        label="Product Code / SKU"
+                        fullWidth label="Product Code / SKU"
                         placeholder="Your internal reference code (used to generate the product SKU)"
-                        value={productData.productCode}
-                        onChange={handleInputChange('productCode')}
+                        value={productData.productCode} onChange={handleInputChange('productCode')}
                         size="small"
                       />
-                      <Box>
+
+                      {selectedCategoryIds.length > 0 && (
+                        <Box>
+                          {categoryAttributesLoading ? (
+                            <Stack spacing={1.5}>
+                              {[1, 2, 3].map((i) => <Skeleton key={i} variant="rectangular" height={40} sx={{ borderRadius: 1 }} />)}
+                            </Stack>
+                          ) : categoryAttributes.length > 0 ? (
+                            <Stack spacing={3}>
+                              {Object.entries(attributesByGroup).map(([groupName, attrs]) => (
+                                <Box key={groupName}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '2px solid #e2e8f0' }}>
+                                    <Box sx={{ width: 4, height: 18, bgcolor: '#3b82f6', borderRadius: 1, flexShrink: 0 }} />
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem' }}>{groupName}</Typography>
+                                    <Chip label={`${attrs.length} field${attrs.length > 1 ? 's' : ''}`} size="small" sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#eff6ff', color: '#3b82f6', fontWeight: 600, ml: 'auto' }} />
+                                  </Box>
+                                  <Grid container spacing={2}>
+                                    {attrs.map((attr) => (
+                                      <Grid item xs={12} sm={6} key={attr.attribute_code}>
+                                        {attr.input_type === 'select' ? (
+                                          <Autocomplete
+                                            size="small" options={attr.options}
+                                            getOptionLabel={(opt) => typeof opt === 'string' ? opt : opt.label}
+                                            value={attr.options.find((o) => o.value === attributeValues[attr.attribute_code]) ?? null}
+                                            onChange={(_e, newVal) => setAttributeValues((prev) => ({ ...prev, [attr.attribute_code]: newVal ? (newVal as AttributeOption).value : '' }))}
+                                            renderInput={(params) => <TextField {...params} label={attr.label} placeholder={`Select ${attr.label.toLowerCase()}...`} />}
+                                            renderOption={(props, option) => <li {...props} key={option.value}>{option.label}</li>}
+                                            isOptionEqualToValue={(o, v) => o.value === v.value}
+                                          />
+                                        ) : (
+                                          <TextField
+                                            fullWidth size="small" label={attr.label}
+                                            placeholder={`Enter ${attr.label.toLowerCase()}...`}
+                                            value={attributeValues[attr.attribute_code] ?? ''}
+                                            onChange={(e) => setAttributeValues((prev) => ({ ...prev, [attr.attribute_code]: e.target.value }))}
+                                            type={attr.backend_type === 'decimal' || attr.backend_type === 'int' ? 'number' : 'text'}
+                                          />
+                                        )}
+                                      </Grid>
+                                    ))}
+                                  </Grid>
+                                </Box>
+                              ))}
+                            </Stack>
+                          ) : (
+                            <Alert severity="info" icon={<Info />} sx={{ fontSize: '0.85rem' }}>No additional specifications required for the selected categories.</Alert>
+                          )}
+                        </Box>
+                      )}
+
+                      {selectedCategoryIds.length === 0 && (
+                        <Alert severity="warning" sx={{ fontSize: '0.85rem' }}>Select categories in Step 1 to load product specifications.</Alert>
+                      )}
+
+                      {/* <Box>
                         <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                           <LocalShipping sx={{ color: '#3b82f6', fontSize: 20 }} />
-                          Shipping & Delivery
+                          Shipping &amp; Delivery
                         </Typography>
                         <Stack spacing={2}>
-                          <TextField fullWidth label="Estimated Delivery Time" placeholder="e.g., 5-7 business days" value={productData.deliveryTime} onChange={handleInputChange('deliveryTime')} size="small" />
-                          <TextField fullWidth label="Packaging Details" placeholder="Describe packaging materials, dimensions, and protection measures..." value={productData.packagingDetails} onChange={handleInputChange('packagingDetails')} multiline rows={3} size="small" />
+                          <TextField
+                            fullWidth label="Estimated Delivery Time" placeholder="e.g., 5-7 business days" size="small"
+                            value={productData.deliveryTime} onChange={handleInputChange('deliveryTime')}
+                          />
+                          <TextField
+                            fullWidth label="Packaging Details"
+                            placeholder="Describe packaging materials, dimensions, and protection measures..."
+                            value={productData.packagingDetails} onChange={handleInputChange('packagingDetails')}
+                            multiline rows={3} size="small"
+                          />
                         </Stack>
-                      </Box>
+                      </Box> */}
                     </Stack>
                   </Box>
                 )}
 
-                {/* ── Step 2: Review ── */}
+                {/* ════ STEP 2 — Review & Publish ════ */}
                 {activeStep === 2 && (
                   <Box sx={{ p: 3 }}>
                     <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>Review Your Product</Typography>
@@ -768,24 +888,33 @@ function ProductCreatePage() {
                           <Typography variant="body2" fontWeight={600}>{productData.name || 'Not provided'}</Typography>
                         </CardContent>
                       </Card>
+
                       <Card variant="outlined" sx={{ borderRadius: 2 }}>
                         <CardContent sx={{ py: 1.5 }}>
-                          <Typography variant="caption" color="text.secondary">Category</Typography>
-                          <Typography variant="body2" fontWeight={600}>
-                            {selectedCategory
-                              ? `${categories.find((c) => c.id === selectedCategory)?.name}${selectedSubCategory
-                                ? ` > ${categories.find((c) => c.id === selectedCategory)?.subCategories.find((s) => s.id === selectedSubCategory)?.name}`
-                                : ''}`
-                              : 'Not selected'}
-                          </Typography>
+                          <Typography variant="caption" color="text.secondary">Categories ({selectedCategoryUids.length})</Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                            {selectedCategoryUids.length === 0
+                              ? <Typography variant="body2" color="text.secondary">None selected</Typography>
+                              : selectedCategoryUids.map((uid) => (
+                                <Chip key={uid} size="small" label={findCategoryName(uid)}
+                                  sx={{ bgcolor: '#eff6ff', color: '#1d4ed8', fontSize: '11px', fontWeight: 600, border: '1px solid #bfdbfe' }}
+                                />
+                              ))}
+                          </Box>
+                          {attributeSetName && (
+                            <Typography variant="caption" sx={{ color: '#64748b', mt: 0.5, display: 'block' }}>
+                              Attribute Set: <strong>{attributeSetName}</strong>
+                            </Typography>
+                          )}
                         </CardContent>
                       </Card>
+
                       <Card variant="outlined" sx={{ borderRadius: 2 }}>
                         <CardContent sx={{ py: 1.5 }}>
                           <Typography variant="caption" color="text.secondary">Pricing</Typography>
                           <Stack spacing={1}>
                             <Typography variant="body2" fontWeight={600}>
-                              ₹{productData.price || '0'}{productData.unitText ? ` / ${productData.unitText}` : ''}
+                              Rs.{productData.price || '0'}{productData.unitText ? ` / ${productData.unitText}` : ''}
                             </Typography>
                             {productData.minOrderQty && (
                               <Typography variant="body2" color="text.secondary">
@@ -794,7 +923,7 @@ function ProductCreatePage() {
                             )}
                             {productData.specialPrice && (
                               <Box>
-                                <Chip label={`Special Price: ₹${productData.specialPrice}`} size="small" sx={{ bgcolor: '#dcfce7', color: '#10b981', fontWeight: 600 }} />
+                                <Chip label={`Special Price: Rs.${productData.specialPrice}`} size="small" sx={{ bgcolor: '#dcfce7', color: '#10b981', fontWeight: 600 }} />
                                 {productData.specialPriceFrom && productData.specialPriceTo && (
                                   <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
                                     Valid from {productData.specialPriceFrom} to {productData.specialPriceTo}
@@ -805,17 +934,34 @@ function ProductCreatePage() {
                           </Stack>
                         </CardContent>
                       </Card>
+
                       <Card variant="outlined" sx={{ borderRadius: 2 }}>
                         <CardContent sx={{ py: 1.5 }}>
                           <Typography variant="caption" color="text.secondary">Images</Typography>
                           <Typography variant="body2">{images.length} image{images.length !== 1 ? 's' : ''} uploaded</Typography>
                           {images.length > 0 && (
                             <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
-                              Cover Image: Image 1 · Gallery: {images.length - 1} additional image{images.length - 1 !== 1 ? 's' : ''}
+                              Cover Image: Image 1 &nbsp;·&nbsp; Gallery: {images.length - 1} additional
                             </Typography>
                           )}
                         </CardContent>
                       </Card>
+
+                      {categoryAttributes.length > 0 && Object.keys(attributeValues).some((k) => attributeValues[k]) && (
+                        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+                          <CardContent sx={{ py: 1.5 }}>
+                            <Typography variant="caption" color="text.secondary">Product Specifications</Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                              {categoryAttributes.filter((a) => attributeValues[a.attribute_code]).map((attr) => {
+                                const val = attributeValues[attr.attribute_code]
+                                const label = attr.input_type === 'select' ? (attr.options.find((o) => o.value === val)?.label ?? val) : val
+                                return <Chip key={attr.attribute_code} size="small" label={`${attr.label}: ${label}`} sx={{ bgcolor: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '11px', color: '#475569' }} />
+                              })}
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      )}
+
                       {productData.description && (
                         <Card variant="outlined" sx={{ borderRadius: 2 }}>
                           <CardContent sx={{ py: 1.5 }}>
@@ -824,35 +970,30 @@ function ProductCreatePage() {
                           </CardContent>
                         </Card>
                       )}
-                      <Alert severity="success">Your product is ready to publish! Click "Publish Product" below to make it live.</Alert>
+
+                      <Alert severity="success">
+                        Your product is ready to publish! Click "Publish Product" below to make it live.
+                      </Alert>
                     </Stack>
                   </Box>
                 )}
 
-                {/* Navigation footer */}
+                {/* Nav footer */}
                 <Divider />
                 <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', bgcolor: '#fafbfc' }}>
                   <Button
-                    variant="outlined"
-                    onClick={handleBack}
-                    disabled={activeStep === 0 || isProcessing}
-                    size="small"
+                    variant="outlined" onClick={handleBack}
+                    disabled={activeStep === 0 || isProcessing} size="small"
                     sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569' }}
                   >
                     Back
                   </Button>
                   <Stack direction="row" spacing={1}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      disabled={isProcessing}
-                      sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569' }}
-                    >
+                    <Button variant="outlined" size="small" disabled={isProcessing} sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569' }}>
                       Save Draft
                     </Button>
                     <Button
-                      variant="contained"
-                      size="small"
+                      variant="contained" size="small"
                       onClick={() => { activeStep === steps.length - 1 ? handlePublish() : handleNext() }}
                       disabled={isProcessing}
                       sx={{ textTransform: 'none', bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, minWidth: 120 }}
@@ -873,11 +1014,11 @@ function ProductCreatePage() {
               </Paper>
             </Grid>
 
-            {/* Sidebar — quality score, unit aliased to satisfy ProductDataType */}
-            <Grid item xs={12} lg={4}>
+            {/* Sidebar */}
+            <Grid item xs={12} md={4}>
               <ProductQualityScore
                 productData={{ ...productData, unit: productData.unitText }}
-                selectedCategory={selectedCategory}
+                selectedCategory={selectedCategoryUids[0] ?? ''}
                 images={images}
               />
             </Grid>
@@ -887,71 +1028,45 @@ function ProductCreatePage() {
           <Dialog open={categoryRequestOpen} onClose={() => setCategoryRequestOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
             <DialogTitle sx={{ pb: 1 }}>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>Request New Category</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                Can't find the right category? Let us know and we'll add it for you.
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Can't find the right category? Let us know and we'll add it for you.</Typography>
             </DialogTitle>
             <DialogContent sx={{ pt: 2 }}>
               <TextField
-                fullWidth
-                label="Category Name"
-                placeholder="e.g., Organic Food Products, Solar Equipment, etc."
-                value={requestedCategory}
-                onChange={(e) => setRequestedCategory(e.target.value)}
-                multiline
-                rows={3}
+                fullWidth label="Category Name"
+                placeholder="e.g., Organic Food Products, Solar Equipment..."
+                value={requestedCategory} onChange={(e) => setRequestedCategory(e.target.value)}
+                multiline rows={3}
                 sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 helperText="Please provide as much detail as possible about the category"
               />
               <Alert severity="info" icon={<Info />} sx={{ fontSize: '0.875rem' }}>
-                Your request will be reviewed by our admin team. We typically add new categories within 24–48 hours.
+                Your request will be reviewed by our admin team. We typically add new categories within 24-48 hours.
               </Alert>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 3 }}>
-              <Button
-                variant="outlined"
-                onClick={() => { setCategoryRequestOpen(false); setRequestedCategory('') }}
-                sx={{ textTransform: 'none', borderRadius: 2, borderColor: '#cbd5e1', color: '#475569' }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleCategoryRequest}
-                disabled={!requestedCategory.trim()}
-                sx={{ textTransform: 'none', borderRadius: 2, bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}
-              >
-                Submit Request
-              </Button>
+              <Button variant="outlined" onClick={() => { setCategoryRequestOpen(false); setRequestedCategory('') }} sx={{ textTransform: 'none', borderRadius: 2, borderColor: '#cbd5e1', color: '#475569' }}>Cancel</Button>
+              <Button variant="contained" onClick={handleCategoryRequest} disabled={!requestedCategory.trim()} sx={{ textTransform: 'none', borderRadius: 2, bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Submit Request</Button>
             </DialogActions>
           </Dialog>
 
           {/* Snackbar */}
           <Snackbar
-            open={snackbar.open}
-            autoHideDuration={6000}
+            open={snackbar.open} autoHideDuration={6000}
             onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
             anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
           >
-            <Alert
-              onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-              severity={snackbar.severity}
-              sx={{ width: '100%' }}
-              icon={snackbar.severity === 'success' ? <CheckCircle /> : undefined}
-            >
+            <Alert onClose={() => setSnackbar((s) => ({ ...s, open: false }))} severity={snackbar.severity} sx={{ width: '100%' }} icon={snackbar.severity === 'success' ? <CheckCircle /> : undefined}>
               {snackbar.message}
             </Alert>
           </Snackbar>
 
-        </WaitForCustomer>
-      </SellerAccountLayout>
+        </WaitForCustomer >
+      </SellerAccountLayout >
     </>
   )
 }
 
-const pageOptions: PageOptions<LayoutNavigationProps> = {
-  Layout: LayoutNavigation,
-}
+const pageOptions: PageOptions<LayoutNavigationProps> = { Layout: LayoutNavigation }
 ProductCreatePage.pageOptions = pageOptions
 export default ProductCreatePage
 

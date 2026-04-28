@@ -37,11 +37,12 @@ import {
   DialogContentText,
   DialogActions,
   Pagination,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import {
   Search,
   Add,
-  FilterList,
   Delete,
   MoreVert,
   Inventory2,
@@ -51,7 +52,7 @@ import {
   CheckCircle,
   Warning,
 } from '@mui/icons-material'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { gql, useQuery, useMutation } from '@apollo/client'
 import { useRouter } from 'next/router'
 import type { LayoutNavigationProps } from '../../components'
@@ -66,51 +67,24 @@ type GetPageStaticProps = GetStaticProps<LayoutNavigationProps, Props>
 
 // ─── GraphQL ──────────────────────────────────────────────────────────────────
 
-const SELLER_PRODUCTS_QUERY = gql`
-  query SellerProducts($seller: String!, $pageSize: Int!, $currentPage: Int!) {
-    products(
-      filter: { seller_id: { match: $seller } }
-      pageSize: $pageSize
-      currentPage: $currentPage
-    ) {
-      items {
-        uid
-        sku
+const ALL_SELLER_PRODUCTS_QUERY = gql`
+  query allSellerProducts($seller_id: Int!, $search: String, $pageSize: Int) {
+    allSellerProducts(seller_id: $seller_id, search: $search,pageSize: $pageSize
+) {
+      id
+      name
+      status
+      url_key
+      sku
+      price
+      unit_of_measurement
+      unit_of_measurement_label
+      mqa
+      categories {
+        id
         name
-        location
-        seller
-        url_key
-        categories {
-          uid
-          name
-          url_key
-          __typename
-        }
-        small_image {
-          url
-          label
-          __typename
-        }
-        price_range {
-          minimum_price {
-            regular_price {
-              value
-              currency
-              __typename
-            }
-            __typename
-          }
-          __typename
-        }
-        __typename
       }
-      total_count
-      page_info {
-        current_page
-        page_size
-        total_pages
-        __typename
-      }
+      image
       __typename
     }
   }
@@ -127,12 +101,13 @@ const DELETE_PRODUCT_MUTATION = gql`
 
 const TOGGLE_PRODUCT_STATUS_MUTATION = gql`
   mutation ToggleProductStatus($sku: String!, $status: Int!) {
-    updateProduct(sku: $sku, input: { status: $status }) {
+    toggleProductStatus(sku: $sku, status: $status) {
       success
       message
       product {
         id
         sku
+        status
       }
     }
   }
@@ -141,18 +116,17 @@ const TOGGLE_PRODUCT_STATUS_MUTATION = gql`
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface GraphQLProduct {
-  uid: string
-  sku: string
+  id: number
   name: string
-  location: string | null
-  seller: string | null
+  status: number
   url_key: string
-  status: number | null
-  categories: Array<{ uid: string; name: string; url_key: string }>
-  small_image: { url: string; label: string }
-  price_range: {
-    minimum_price: { regular_price: { value: number; currency: string } }
-  }
+  sku: string
+  price: number
+  unit_of_measurement: string
+  unit_of_measurement_label: string
+  mqa: string | null
+  categories: Array<{ id: number; name: string }>
+  image: string | null
 }
 
 interface Product {
@@ -161,134 +135,127 @@ interface Product {
   price: number
   unit: string
   category: string
-  minOrderQty: number
+  minOrderQty: string
   images: string[]
   enabled: boolean
-  stock: number
   sku: string
-  createdAt: string
-  description?: string
+  url: string
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50]
 const DEFAULT_PAGE_SIZE = 20
+const PAGE_SIZE_OPTIONS = [10, 20, 50]
 
-const allCategories = [
-  'Apparel & Fashion',
-  'Electronics & Gadgets',
-  'Home & Kitchen',
-  'Bags & Luggage',
-  'Food & Beverages',
-  'Building & Construction',
-  'Health & Beauty',
-  'Furniture & Decor',
-  'Industrial & Tools',
-  'Toys & Games',
-]
-
-// Magento status: 1 = Enabled, 2 = Disabled
 const transformGraphQLProduct = (gqlProduct: GraphQLProduct): Product => ({
-  id: gqlProduct.uid,
+  id: String(gqlProduct.id),
   name: gqlProduct.name,
-  price: gqlProduct.price_range.minimum_price.regular_price.value,
-  unit: 'piece',
-  category: gqlProduct.categories[0]?.name || 'Uncategorized',
-  minOrderQty: 10,
-  images: gqlProduct.small_image?.url ? [gqlProduct.small_image.url] : [],
-  enabled: gqlProduct.status !== 2,
-  stock: 100,
+  price: gqlProduct.price,
+  unit: gqlProduct.unit_of_measurement_label || '',
+  category: gqlProduct.categories?.[0]?.name || 'Uncategorized',
+  minOrderQty: gqlProduct.mqa || '1',
+  // status 1 = active/enabled, anything else (e.g. 2) = disabled
+  enabled: gqlProduct.status === 1,
   sku: gqlProduct.sku,
-  createdAt: new Date().toISOString().split('T')[0],
-  description: '',
+  images: gqlProduct.image ? [gqlProduct.image] : [],
+  url: `/p/${gqlProduct.url_key}`, // ✅ ADD THIS
+
 })
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function SellerProductsPage() {
   const router = useRouter()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
-  const customerQuery = useCustomerQuery(CustomerDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  const customerQuery = useCustomerQuery(CustomerDocument, { fetchPolicy: 'cache-and-network' })
 
-  // ── Pagination state ──────────────────────────────────────────────────────
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  // ── Search — two-state pattern (input vs submitted) ──────────────────────
+  const [inputValue, setInputValue] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
-  // fetchPolicy: 'network-only' — always hits the server, never serves stale cache
-  const { data, loading, error, refetch } = useQuery(SELLER_PRODUCTS_QUERY, {
-    variables: { seller: sellerId, pageSize, currentPage },
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value)
+  }
+
+  const handleSearchSubmit = () => {
+    setSearchQuery(inputValue.trim())
+    setCurrentPage(1)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') handleSearchSubmit()
+  }
+
+  const queryVariables = useMemo(() => ({
+    seller_id: Number(sellerId),
+    pageSize: 50,
+    ...(searchQuery ? { search: searchQuery } : {}),
+  }), [searchQuery])
+
+  const { data, loading, error, refetch } = useQuery(ALL_SELLER_PRODUCTS_QUERY, {
+    variables: queryVariables,
     fetchPolicy: 'network-only',
-    notifyOnNetworkStatusChange: true, // keeps `loading` true during refetch / page changes
+    notifyOnNetworkStatusChange: true,
   })
 
   const [deleteProduct, { loading: isDeleting }] = useMutation(DELETE_PRODUCT_MUTATION)
   const [toggleStatus, { loading: isToggling }] = useMutation(TOGGLE_PRODUCT_STATUS_MUTATION)
 
-  // ── UI state ──────────────────────────────────────────────────────────────────
-  const [searchTerm, setSearchTerm] = useState('')
+  // ── UI state ──────────────────────────────────────────────────────────────
   const [sortBy, setSortBy] = useState('recent')
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [anchorEl, setAnchorEl] = useState<{ [key: string]: HTMLElement | null }>({})
-
-  // Optimistic local toggle map { sku: boolean }
   const [localEnabled, setLocalEnabled] = useState<Record<string, boolean>>({})
-
-  // Delete confirmation dialog state
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; sku: string; name: string }>({
-    open: false,
-    sku: '',
-    name: '',
+    open: false, sku: '', name: '',
   })
-
-  // Snackbar feedback
   const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success' as 'success' | 'error' | 'info',
+    open: false, message: '', severity: 'success' as 'success' | 'error' | 'info',
   })
 
-  // ── Derived data ──────────────────────────────────────────────────────────────
+  // ── Derived data ──────────────────────────────────────────────────────────
 
-  const products = useMemo(() => {
-    if (!data?.products?.items) return []
-    return data.products.items.map(transformGraphQLProduct)
+  const allProducts = useMemo(() => {
+    if (!data?.allSellerProducts) return []
+    return data.allSellerProducts.map(transformGraphQLProduct)
   }, [data])
 
-  // Total pages from server-side pagination info
-  const totalPages = data?.products?.page_info?.total_pages ?? 1
-  const totalCount = data?.products?.total_count ?? 0
-
-  // Merge optimistic local state over server state
+  // Merge server state with optimistic local toggle state
   const productsWithLocalState = useMemo(
-    () =>
-      products.map((p) => ({
-        ...p,
-        enabled: p.sku in localEnabled ? localEnabled[p.sku] : p.enabled,
-      })),
-    [products, localEnabled]
+    () => allProducts.map((p) => ({
+      ...p,
+      enabled: p.sku in localEnabled ? localEnabled[p.sku] : p.enabled,
+    })),
+    [allProducts, localEnabled]
   )
 
-  const filteredProducts = useMemo(() => {
-    let list = productsWithLocalState.filter((product) => {
-      if (
-        searchTerm &&
-        !product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-        return false
-      if (selectedCategory !== 'all' && product.category !== selectedCategory) return false
-      return true
-    })
-    if (sortBy === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name))
-    else if (sortBy === 'price-high') list = [...list].sort((a, b) => b.price - a.price)
-    else if (sortBy === 'price-low') list = [...list].sort((a, b) => a.price - b.price)
+  // Client-side sort (search is server-side via the query variable)
+  const sortedProducts = useMemo(() => {
+    let list = [...productsWithLocalState]
+    if (sortBy === 'name') list.sort((a, b) => a.name.localeCompare(b.name))
+    else if (sortBy === 'price-high') list.sort((a, b) => b.price - a.price)
+    else if (sortBy === 'price-low') list.sort((a, b) => a.price - b.price)
+    // 'recent' = server order, no re-sort needed
     return list
-  }, [productsWithLocalState, searchTerm, selectedCategory, sortBy])
+  }, [productsWithLocalState, sortBy])
 
-  // ── Handlers ──────────────────────────────────────────────────────────────────
+  // Client-side pagination
+  const totalCount = sortedProducts.length
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return sortedProducts.slice(start, start + pageSize)
+  }, [sortedProducts, currentPage, pageSize])
+
+  // Stats derived from full list (not just current page)
+  const activeCount = productsWithLocalState.filter((p) => p.enabled).length
+  const inactiveCount = productsWithLocalState.filter((p) => !p.enabled).length
+  const categoryCount = new Set(allProducts.map((p) => p.category)).size
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, page: number) => {
     setCurrentPage(page)
@@ -297,76 +264,50 @@ function SellerProductsPage() {
 
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize)
-    setCurrentPage(1) // reset to first page when page size changes
+    setCurrentPage(1)
   }
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, productId: string) => {
-    setAnchorEl((prev) => ({ ...prev, [productId]: event.currentTarget }))
-  }
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, id: string) =>
+    setAnchorEl((prev) => ({ ...prev, [id]: e.currentTarget }))
+  const handleMenuClose = (id: string) =>
+    setAnchorEl((prev) => ({ ...prev, [id]: null }))
 
-  const handleMenuClose = (productId: string) => {
-    setAnchorEl((prev) => ({ ...prev, [productId]: null }))
-  }
-
-  const handleEdit = (sku: string, productId: string) => {
-    handleMenuClose(productId)
+  const handleEdit = (sku: string, id: string) => {
+    handleMenuClose(id)
     router.push(`/seller/editproduct?sku=${encodeURIComponent(sku)}`)
   }
 
-  // Toggle with optimistic update + API call + revert on failure
   const handleToggleEnabled = async (sku: string, currentEnabled: boolean) => {
     const newEnabled = !currentEnabled
     setLocalEnabled((prev) => ({ ...prev, [sku]: newEnabled }))
-
     try {
-      const { data: toggleData } = await toggleStatus({
-        variables: { sku, status: newEnabled ? 1 : 2 },
-      })
-
-      if (!toggleData?.updateProduct?.success) {
+      const { data: d } = await toggleStatus({ variables: { sku, status: newEnabled ? 1 : 2 } })
+      if (!d?.toggleProductStatus?.success) {
         setLocalEnabled((prev) => ({ ...prev, [sku]: currentEnabled }))
-        setSnackbar({
-          open: true,
-          message: toggleData?.updateProduct?.message || 'Failed to update status',
-          severity: 'error',
-        })
+        setSnackbar({ open: true, message: d?.toggleProductStatus?.message || 'Failed to update status', severity: 'error' })
         return
       }
-
-      setSnackbar({
-        open: true,
-        message: `Product ${newEnabled ? 'enabled' : 'disabled'} successfully`,
-        severity: 'success',
-      })
+      setSnackbar({ open: true, message: `Product ${newEnabled ? 'enabled' : 'disabled'} successfully`, severity: 'success' })
     } catch {
       setLocalEnabled((prev) => ({ ...prev, [sku]: currentEnabled }))
       setSnackbar({ open: true, message: 'Failed to update product status', severity: 'error' })
     }
   }
 
-  // Open delete confirmation dialog
-  const handleDeleteClick = (sku: string, name: string, productId: string) => {
-    handleMenuClose(productId)
+  const handleDeleteClick = (sku: string, name: string, id: string) => {
+    handleMenuClose(id)
     setDeleteDialog({ open: true, sku, name })
   }
 
-  // Execute delete after confirmation
   const handleDeleteConfirm = async () => {
     const { sku } = deleteDialog
     setDeleteDialog((d) => ({ ...d, open: false }))
-
     try {
-      const { data: deleteData } = await deleteProduct({ variables: { sku } })
-
-      if (!deleteData?.deleteProduct?.success) {
-        setSnackbar({
-          open: true,
-          message: deleteData?.deleteProduct?.message || 'Failed to delete product',
-          severity: 'error',
-        })
+      const { data: d } = await deleteProduct({ variables: { sku } })
+      if (!d?.deleteProduct?.success) {
+        setSnackbar({ open: true, message: d?.deleteProduct?.message || 'Failed to delete product', severity: 'error' })
         return
       }
-
       setSnackbar({ open: true, message: 'Product deleted successfully', severity: 'success' })
       refetch()
     } catch {
@@ -374,9 +315,15 @@ function SellerProductsPage() {
     }
   }
 
-  // ── Loading / error guards ────────────────────────────────────────────────────
+  const handleClearFilters = () => {
+    setInputValue('')
+    setSearchQuery('')
+    setCurrentPage(1)
+  }
 
-  if (loading && products.length === 0) {
+  // ── Guards ────────────────────────────────────────────────────────────────
+
+  if (loading && allProducts.length === 0) {
     return (
       <WaitForCustomer waitFor={customerQuery}>
         <SellerAccountLayout>
@@ -401,134 +348,117 @@ function SellerProductsPage() {
     )
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <WaitForCustomer waitFor={customerQuery}>
       <SellerAccountLayout>
         <PageMeta title="My Products" metaRobots={['noindex']} />
 
-        <Box sx={{ maxWidth: '1400px', mx: 'auto', p: 3 }}>
+        <Box sx={{ maxWidth: '1400px', mx: 'auto', p: { xs: 1.5, sm: 2, md: 3 } }}>
 
           {/* Header */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 }, gap: 1 }}>
+            <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ fontWeight: 700, color: '#1e293b' }}>
               <Trans id="My Products" />
             </Typography>
             <Button
-              variant="contained"
-              startIcon={<Add />}
-              href="/seller/addproduct"
+              variant="contained" startIcon={<Add />} href="/seller/addproduct"
+              size={isMobile ? 'small' : 'medium'}
               sx={{
-                bgcolor: '#3b82f6', px: 3, py: 1.25, borderRadius: 2,
-                textTransform: 'none', fontWeight: 600,
+                bgcolor: '#3b82f6', px: { xs: 1.5, sm: 3 }, py: { xs: 1, sm: 1.25 },
+                borderRadius: 2, textTransform: 'none', fontWeight: 600,
+                whiteSpace: 'nowrap', flexShrink: 0,
                 boxShadow: '0 1px 3px rgba(59,130,246,0.2)',
                 '&:hover': { bgcolor: '#2563eb', boxShadow: '0 4px 6px rgba(59,130,246,0.3)' },
               }}
             >
-              <Trans id="Add New Product" />
+              {isMobile ? 'Add' : <Trans id="Add New Product" />}
             </Button>
           </Box>
 
-          {/* Stats */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+          {/* Stats — total is full list count; active = status 1 */}
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
+            gap: { xs: 1.5, sm: 2 }, mb: { xs: 2, sm: 3 },
+          }}>
             {[
               { label: 'Total Products', value: totalCount, color: '#1e293b' },
-              { label: 'Active', value: productsWithLocalState.filter((p) => p.enabled).length, color: '#059669' },
-              { label: 'Inactive', value: productsWithLocalState.filter((p) => !p.enabled).length, color: '#ef4444' },
-              { label: 'Categories', value: new Set(products.map((p) => p.category)).size, color: '#3b82f6' },
+              { label: 'Active', value: activeCount, color: '#059669' },
+              { label: 'Inactive', value: inactiveCount, color: '#ef4444' },
+              { label: 'Categories', value: categoryCount, color: '#3b82f6' },
             ].map(({ label, value, color }) => (
-              <Paper key={label} sx={{ flex: 1, p: 2.5, borderRadius: 2, border: '1px solid #e2e8f0', boxShadow: 'none' }}>
-                <Typography variant="body2" sx={{ color: '#64748b', mb: 0.5 }}>{label}</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, color }}>{value}</Typography>
+              <Paper key={label} sx={{ p: { xs: 1.5, sm: 2.5 }, borderRadius: 2, border: '1px solid #e2e8f0', boxShadow: 'none' }}>
+                <Typography variant="body2" sx={{ color: '#64748b', mb: 0.5, fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
+                  {label}
+                </Typography>
+                <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 700, color }}>{value}</Typography>
               </Paper>
             ))}
           </Box>
 
           {/* Filters */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1.5, sm: 2 }, mb: { xs: 2, sm: 3 } }}>
             <TextField
-              placeholder="Search by name or SKU..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{ flex: 1 }}
-              size="small"
+              placeholder="Search by name or SKU"
+              value={inputValue}
+              onChange={handleSearchChange}
+              onKeyDown={handleKeyDown}
+              sx={{ flex: 1 }} size="small"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Search sx={{ color: '#64748b' }} />
+                    {loading && searchQuery
+                      ? <CircularProgress size={16} sx={{ color: '#64748b' }} />
+                      : <Search sx={{ color: '#64748b' }} />}
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={handleSearchSubmit}
+                      sx={{ textTransform: 'none', bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}
+                    >
+                      Search
+                    </Button>
                   </InputAdornment>
                 ),
               }}
             />
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <Select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                startAdornment={
-                  <InputAdornment position="start">
-                    <FilterList sx={{ color: '#64748b', ml: 1 }} />
-                  </InputAdornment>
-                }
-              >
-                <MenuItem value="all">All Categories</MenuItem>
-                {allCategories.map((cat) => (
-                  <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 180 }}>
+            <FormControl size="small" sx={{ flexShrink: 0, minWidth: { xs: '100%', sm: 180 } }}>
               <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <MenuItem value="recent">Recent First</MenuItem>
-                <MenuItem value="name">Name (A-Z)</MenuItem>
-                <MenuItem value="price-high">Price: High to Low</MenuItem>
-                <MenuItem value="price-low">Price: Low to High</MenuItem>
+                <MenuItem value="recent">Recent</MenuItem>
+                <MenuItem value="name">Name A-Z</MenuItem>
+                <MenuItem value="price-high">Price ↓</MenuItem>
+                <MenuItem value="price-low">Price ↑</MenuItem>
               </Select>
             </FormControl>
-          </Box>
-
-          {/* Category chips */}
-          <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-            {['All', ...allCategories].map((cat) => {
-              const val = cat === 'All' ? 'all' : cat
-              const active = selectedCategory === val
-              return (
-                <Chip
-                  key={cat}
-                  label={cat}
-                  onClick={() => setSelectedCategory(val)}
-                  variant={active ? 'filled' : 'outlined'}
-                  sx={{
-                    fontWeight: 600,
-                    borderColor: '#cbd5e1',
-                    color: active ? 'white' : '#64748b',
-                    ...(active && { bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }),
-                  }}
-                />
-              )
-            })}
           </Box>
 
           {/* Page info + per-page selector */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: { xs: 1, sm: 0 }, mb: 2,
+          }}>
             <Typography variant="body2" sx={{ color: '#64748b' }}>
               {loading
-                ? 'Loading…'
-                : `Showing ${filteredProducts.length} of ${totalCount} product${totalCount !== 1 ? 's' : ''}`}
+                ? 'Searching…'
+                : `Showing ${paginatedProducts.length} of ${totalCount} product${totalCount !== 1 ? 's' : ''}${searchQuery ? ` for "${searchQuery}"` : ''}`}
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Typography variant="body2" sx={{ color: '#64748b' }}>Per page:</Typography>
               {PAGE_SIZE_OPTIONS.map((size) => (
-                <Chip
-                  key={size}
-                  label={size}
-                  size="small"
+                <Chip key={size} label={size} size="small"
                   onClick={() => handlePageSizeChange(size)}
                   variant={pageSize === size ? 'filled' : 'outlined'}
                   sx={{
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    borderColor: '#cbd5e1',
+                    fontWeight: 600, cursor: 'pointer', borderColor: '#cbd5e1',
                     color: pageSize === size ? 'white' : '#64748b',
                     ...(pageSize === size && { bgcolor: '#3b82f6' }),
                   }}
@@ -537,9 +467,9 @@ function SellerProductsPage() {
             </Box>
           </Box>
 
-          {/* Products List — subtle overlay while loading new page */}
+          {/* Products list */}
           <Box sx={{ position: 'relative' }}>
-            {loading && products.length > 0 && (
+            {loading && allProducts.length > 0 && (
               <Box sx={{
                 position: 'absolute', inset: 0, zIndex: 1,
                 display: 'flex', justifyContent: 'center', alignItems: 'flex-start', pt: 6,
@@ -550,221 +480,279 @@ function SellerProductsPage() {
             )}
 
             <Stack spacing={2}>
-              {filteredProducts.map((product) => (
-                <Card
-                  key={product.id}
-                  sx={{
-                    p: 2.5,
-                    borderRadius: 2,
-                    border: `1px solid ${product.enabled ? '#e2e8f0' : alpha('#ef4444', 0.2)}`,
-                    boxShadow: 'none',
-                    opacity: product.enabled ? 1 : 0.82,
-                    '&:hover': {
-                      boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-                      borderColor: product.enabled ? '#cbd5e1' : alpha('#ef4444', 0.4),
-                    },
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', gap: 3 }}>
+              {paginatedProducts.map((product) => (
+                <Card key={product.id} sx={{
+                  p: { xs: 1.5, sm: 2.5 }, borderRadius: 2,
+                  border: `1px solid ${product.enabled ? '#e2e8f0' : alpha('#ef4444', 0.2)}`,
+                  boxShadow: 'none', opacity: product.enabled ? 1 : 0.82,
+                  '&:hover': {
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+                    borderColor: product.enabled ? '#cbd5e1' : alpha('#ef4444', 0.4),
+                  },
+                  transition: 'all 0.2s',
+                }}>
 
-                    {/* Image */}
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      {product.images.length > 0 ? (
-                        <>
-                          <Avatar
-                            src={product.images[0]}
-                            variant="rounded"
-                            sx={{ width: 100, height: 100, border: '2px solid #e2e8f0' }}
-                          />
-                          {product.images.length > 1 && (
-                            <Stack spacing={0.5}>
-                              {product.images.slice(1, 3).map((img, idx) => (
-                                <Avatar key={idx} src={img} variant="rounded" sx={{ width: 32, height: 32, border: '1px solid #e2e8f0' }} />
-                              ))}
-                              {product.images.length > 3 && (
-                                <Box sx={{ width: 32, height: 32, borderRadius: 1, bgcolor: alpha('#3b82f6', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }}>
-                                  <Typography variant="caption" sx={{ color: '#3b82f6', fontWeight: 600 }}>
-                                    +{product.images.length - 3}
-                                  </Typography>
-                                </Box>
-                              )}
-                            </Stack>
-                          )}
-                        </>
-                      ) : (
-                        <Avatar variant="rounded" sx={{ width: 100, height: 100, bgcolor: '#f1f5f9', border: '2px solid #e2e8f0' }}>
-                          <ImageIcon sx={{ fontSize: 40, color: '#cbd5e1' }} />
-                        </Avatar>
-                      )}
-                    </Box>
-
-                    {/* Product Info */}
-                    <Box sx={{ flex: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, mb: 1 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b', flex: 1 }}>
-                          {product.name}
-                        </Typography>
-                        <Chip
-                          label={product.enabled ? 'Active' : 'Inactive'}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha(product.enabled ? '#059669' : '#ef4444', 0.1),
-                            color: product.enabled ? '#059669' : '#ef4444',
-                            fontWeight: 600,
-                            height: 24,
-                          }}
-                        />
-                      </Box>
-
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1 }}>
-                          SKU: {product.sku}
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="caption" sx={{ color: '#64748b' }}>Category:</Typography>
-                          <Chip
-                            label={product.category}
-                            size="small"
-                            sx={{ height: 20, fontSize: '0.7rem', bgcolor: alpha('#3b82f6', 0.1), color: '#3b82f6' }}
-                          />
-                        </Box>
-                      </Box>
-
-                      <Box sx={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                        <Box>
-                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>Price</Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                            ₹{product.price.toLocaleString()}
-                            <Typography component="span" variant="body2" sx={{ color: '#64748b', fontWeight: 400, ml: 0.5 }}>
-                              / {product.unit}
+                  {isMobile ? (
+                    /* ── Mobile layout ── */
+                    <Box>
+                      <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
+                        {product.images.length > 0
+                          ? <Avatar src={product.images[0]} variant="rounded"
+                            sx={{ width: 72, height: 72, flexShrink: 0, border: '2px solid #e2e8f0' }} />
+                          : <Avatar variant="rounded"
+                            sx={{ width: 72, height: 72, flexShrink: 0, bgcolor: '#f1f5f9', border: '2px solid #e2e8f0' }}>
+                            <ImageIcon sx={{ fontSize: 28, color: '#cbd5e1' }} />
+                          </Avatar>
+                        }
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, mb: 0.5 }}>
+                            <Typography variant="subtitle1" onClick={() => router.push(product.url)}
+                              sx={{
+                                fontWeight: 600, color: '#1e293b', flex: 1,
+                                overflow: 'hidden', textOverflow: 'ellipsis',
+                                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                                fontSize: '0.9rem', lineHeight: 1.3,
+                              }}>
+                              {product.name}
                             </Typography>
+                            <Chip label={product.enabled ? 'Active' : 'Inactive'} size="small" sx={{
+                              flexShrink: 0,
+                              bgcolor: alpha(product.enabled ? '#059669' : '#ef4444', 0.1),
+                              color: product.enabled ? '#059669' : '#ef4444',
+                              fontWeight: 600, height: 20, fontSize: '0.65rem',
+                            }} />
+                          </Box>
+                          <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', mb: 0.5 }}>
+                            SKU: {product.sku}
                           </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>Min. Order</Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b' }}>
-                            {product.minOrderQty} {product.unit}{product.minOrderQty > 1 ? 's' : ''}
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>Stock</Typography>
-                          <Chip
-                            label={`${product.stock} units`}
-                            size="small"
-                            sx={{
-                              height: 24,
-                              fontWeight: 600,
-                              bgcolor: alpha(product.stock > 50 ? '#059669' : product.stock > 0 ? '#d97706' : '#dc2626', 0.1),
-                              color: product.stock > 50 ? '#059669' : product.stock > 0 ? '#d97706' : '#dc2626',
-                            }}
-                          />
+                          <Chip label={product.category} size="small"
+                            sx={{ height: 18, fontSize: '0.65rem', bgcolor: alpha('#3b82f6', 0.1), color: '#3b82f6' }} />
                         </Box>
                       </Box>
-                    </Box>
 
-                    {/* Actions */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{
+                        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: 1, mb: 1.5, p: 1.5, bgcolor: '#f8fafc', borderRadius: 1.5,
+                      }}>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Price</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem' }}>
+                            ₹{product.price.toLocaleString()}
+                          </Typography>
+                          {product.unit && (
+                            <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.6rem' }}>/{product.unit}</Typography>
+                          )}
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Min. Order</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b', fontSize: '0.85rem' }}>
+                            {product.minOrderQty}
+                          </Typography>
+                          {product.unit && (
+                            <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.6rem' }}>{product.unit}</Typography>
+                          )}
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Unit</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b', fontSize: '0.85rem' }}>
+                            {product.unit || '—'}
+                          </Typography>
+                        </Box>
+                      </Box>
 
-                      <Tooltip title={product.enabled ? 'Click to disable listing' : 'Click to enable listing'}>
-                        <span>
-                          <Switch
-                            checked={product.enabled}
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #f1f5f9', pt: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Switch checked={product.enabled}
                             onChange={() => handleToggleEnabled(product.sku, product.enabled)}
-                            disabled={isToggling}
-                            size="small"
+                            disabled={isToggling} size="small"
                             sx={{
                               '& .MuiSwitch-switchBase.Mui-checked': { color: '#3b82f6' },
                               '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#3b82f6' },
                             }}
                           />
-                        </span>
-                      </Tooltip>
+                          <Typography variant="caption" sx={{ color: '#64748b' }}>
+                            {product.enabled ? 'Enabled' : 'Disabled'}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          {product.enabled && (
 
-                      <Tooltip title="Edit product">
-                        <IconButton
-                          onClick={() => handleEdit(product.sku, product.id)}
-                          sx={{ color: '#64748b', '&:hover': { color: '#3b82f6', bgcolor: '#eff6ff' } }}
-                        >
-                          <Edit />
-                        </IconButton>
-                      </Tooltip>
-
-                      <IconButton
-                        onClick={(e) => handleMenuOpen(e, product.id)}
-                        sx={{ color: '#64748b', '&:hover': { color: '#3b82f6', bgcolor: '#eff6ff' } }}
-                      >
-                        <MoreVert />
-                      </IconButton>
-
-                      <Menu
-                        anchorEl={anchorEl[product.id]}
-                        open={Boolean(anchorEl[product.id])}
-                        onClose={() => handleMenuClose(product.id)}
-                        PaperProps={{
-                          sx: { borderRadius: 2, minWidth: 170, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' },
-                        }}
-                      >
-                        <MenuItem onClick={() => handleMenuClose(product.id)}>
-                          <Visibility sx={{ mr: 1, fontSize: 20, color: '#64748b' }} />
-                          View Details
-                        </MenuItem>
-                        <MenuItem onClick={() => handleEdit(product.sku, product.id)}>
-                          <Edit sx={{ mr: 1, fontSize: 20, color: '#3b82f6' }} />
-                          <Typography sx={{ color: '#3b82f6' }}>Edit Product</Typography>
-                        </MenuItem>
-                        <Divider />
-                        <MenuItem
-                          onClick={() => handleDeleteClick(product.sku, product.name, product.id)}
-                          disabled={isDeleting}
-                          sx={{ color: 'error.main' }}
-                        >
-                          {isDeleting ? (
-                            <CircularProgress size={16} sx={{ mr: 1, color: 'error.main' }} />
-                          ) : (
-                            <Delete sx={{ mr: 1, fontSize: 20 }} />
+                            <IconButton size="small" onClick={() => handleEdit(product.sku, product.id)}
+                              sx={{ color: '#64748b', '&:hover': { color: '#3b82f6', bgcolor: '#eff6ff' } }}>
+                              <Edit fontSize="small" />
+                            </IconButton>
                           )}
-                          Delete Product
-                        </MenuItem>
-                      </Menu>
+                          <IconButton size="small" onClick={(e) => handleMenuOpen(e, product.id)}
+                            sx={{ color: '#64748b', '&:hover': { color: '#3b82f6', bgcolor: '#eff6ff' } }}>
+                            <MoreVert fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
                     </Box>
-                  </Box>
+                  ) : (
+                    /* ── Desktop layout ── */
+                    <Box sx={{ display: 'flex', gap: 3 }}>
+
+                      {/* Image */}
+                      <Box>
+                        {product.images.length > 0 ? (
+                          <Avatar src={product.images[0]} variant="rounded"
+                            sx={{ width: 100, height: 100, border: '2px solid #e2e8f0' }} />
+                        ) : (
+                          <Avatar variant="rounded"
+                            sx={{ width: 100, height: 100, bgcolor: '#f1f5f9', border: '2px solid #e2e8f0' }}>
+                            <ImageIcon sx={{ fontSize: 40, color: '#cbd5e1' }} />
+                          </Avatar>
+                        )}
+                      </Box>
+
+                      {/* Info */}
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, mb: 1 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b', flex: 1 }}>
+                            {product.name}
+                          </Typography>
+                          <Chip label={product.enabled ? 'Active' : 'Inactive'} size="small" sx={{
+                            bgcolor: alpha(product.enabled ? '#059669' : '#ef4444', 0.1),
+                            color: product.enabled ? '#059669' : '#ef4444',
+                            fontWeight: 600, height: 24,
+                          }} />
+                        </Box>
+
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1 }}>
+                            SKU: {product.sku}
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="caption" sx={{ color: '#64748b' }}>Category:</Typography>
+                            <Chip label={product.category} size="small"
+                              sx={{ height: 20, fontSize: '0.7rem', bgcolor: alpha('#3b82f6', 0.1), color: '#3b82f6' }} />
+                          </Box>
+                        </Box>
+
+                        <Box sx={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                          <Box>
+                            <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>Price</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                              ₹{product.price.toLocaleString()}
+                              {product.unit && (
+                                <Typography component="span" variant="body2"
+                                  sx={{ color: '#64748b', fontWeight: 400, ml: 0.5 }}>
+                                  / {product.unit}
+                                </Typography>
+                              )}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>Min. Order</Typography>
+                            <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                              {product.minOrderQty}
+                              {product.unit && (
+                                <Typography component="span" variant="body2"
+                                  sx={{ color: '#64748b', fontWeight: 400, ml: 0.5 }}>
+                                  {product.unit}
+                                </Typography>
+                              )}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>Unit</Typography>
+                            <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                              {product.unit || '—'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+
+                      {/* Actions */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Tooltip title={product.enabled ? 'Click to disable listing' : 'Click to enable listing'}>
+                          <span>
+                            <Switch checked={product.enabled}
+                              onChange={() => handleToggleEnabled(product.sku, product.enabled)}
+                              disabled={isToggling} size="small"
+                              sx={{
+                                '& .MuiSwitch-switchBase.Mui-checked': { color: '#3b82f6' },
+                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#3b82f6' },
+                              }}
+                            />
+                          </span>
+                        </Tooltip>
+                        {product.enabled && (
+
+                          <Tooltip title="Edit product">
+                            <IconButton onClick={() => handleEdit(product.sku, product.id)}
+                              sx={{ color: '#64748b', '&:hover': { color: '#3b82f6', bgcolor: '#eff6ff' } }}>
+                              <Edit />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <IconButton onClick={(e) => handleMenuOpen(e, product.id)}
+                          sx={{ color: '#64748b', '&:hover': { color: '#3b82f6', bgcolor: '#eff6ff' } }}>
+                          <MoreVert />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Shared dropdown menu */}
+                  <Menu
+                    anchorEl={anchorEl[product.id]} open={Boolean(anchorEl[product.id])}
+                    onClose={() => handleMenuClose(product.id)}
+                    PaperProps={{ sx: { borderRadius: 2, minWidth: 170, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' } }}
+                  >
+                    <MenuItem onClick={() => handleMenuClose(product.id)}>
+                      <Visibility sx={{ mr: 1, fontSize: 20, color: '#64748b' }} />
+                      View Details
+                    </MenuItem>
+                    {/* <MenuItem onClick={() => handleEdit(product.sku, product.id)}>
+                      <Edit sx={{ mr: 1, fontSize: 20, color: '#3b82f6' }} />
+                      <Typography sx={{ color: '#3b82f6' }}>Edit Product</Typography>
+                    </MenuItem> */}
+                    <Divider />
+                    {/* <MenuItem onClick={() => handleDeleteClick(product.sku, product.name, product.id)}
+                      disabled={isDeleting} sx={{ color: 'error.main' }}>
+                      {isDeleting
+                        ? <CircularProgress size={16} sx={{ mr: 1, color: 'error.main' }} />
+                        : <Delete sx={{ mr: 1, fontSize: 20 }} />}
+                      Delete Product
+                    </MenuItem> */}
+                  </Menu>
                 </Card>
               ))}
             </Stack>
           </Box>
 
-          {/* Empty State */}
-          {filteredProducts.length === 0 && !loading && (
+          {/* Empty state */}
+          {paginatedProducts.length === 0 && !loading && (
             <Box sx={{ textAlign: 'center', py: 8, px: 2 }}>
-              <Inventory2 sx={{ fontSize: 80, color: '#cbd5e1', mb: 2 }} />
-              <Typography variant="h6" sx={{ color: '#64748b', mb: 1 }}>No products found</Typography>
+              <Inventory2 sx={{ fontSize: { xs: 60, sm: 80 }, color: '#cbd5e1', mb: 2 }} />
+              <Typography variant="h6" sx={{ color: '#64748b', mb: 1 }}>
+                {searchQuery ? `No products found for "${searchQuery}"` : 'No products found'}
+              </Typography>
               <Typography variant="body2" sx={{ color: '#94a3b8', mb: 3 }}>
                 Try adjusting your search or filters
               </Typography>
-              <Button
-                onClick={() => { setSearchTerm(''); setSelectedCategory('all') }}
-                sx={{ bgcolor: '#3b82f6', px: 3, py: 1, textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: '#2563eb' } }}
-              >
+              <Button onClick={handleClearFilters}
+                sx={{ bgcolor: '#3b82f6', px: 3, py: 1, textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: '#2563eb' } }}>
                 Clear Filters
               </Button>
             </Box>
           )}
 
-          {/* ── Pagination controls ── */}
+          {/* Pagination */}
           {totalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 4, gap: 2 }}>
+            <Box sx={{
+              display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 4,
+              flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 2 },
+            }}>
               <Typography variant="body2" sx={{ color: '#64748b' }}>
                 Page {currentPage} of {totalPages}
               </Typography>
               <Pagination
-                count={totalPages}
-                page={currentPage}
-                onChange={handlePageChange}
-                color="primary"
-                shape="rounded"
-                showFirstButton
-                showLastButton
+                count={totalPages} page={currentPage} onChange={handlePageChange}
+                color="primary" shape="rounded" showFirstButton showLastButton
+                size={isMobile ? 'small' : 'medium'} siblingCount={isMobile ? 0 : 1}
                 sx={{
                   '& .MuiPaginationItem-root': { borderRadius: 1.5, fontWeight: 600 },
                   '& .MuiPaginationItem-root.Mui-selected': { bgcolor: '#3b82f6', color: 'white' },
@@ -775,13 +763,12 @@ function SellerProductsPage() {
 
         </Box>
 
-        {/* ── Delete Confirmation Dialog ── */}
+        {/* Delete dialog */}
         <Dialog
           open={deleteDialog.open}
           onClose={() => setDeleteDialog((d) => ({ ...d, open: false }))}
-          maxWidth="xs"
-          fullWidth
-          PaperProps={{ sx: { borderRadius: 3 } }}
+          maxWidth="xs" fullWidth fullScreen={isMobile}
+          PaperProps={{ sx: { borderRadius: { xs: 0, sm: 3 } } }}
         >
           <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
             <Warning sx={{ color: '#ef4444', fontSize: 24 }} />
@@ -795,41 +782,27 @@ function SellerProductsPage() {
             </DialogContentText>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-            <Button
-              variant="outlined"
-              onClick={() => setDeleteDialog((d) => ({ ...d, open: false }))}
-              sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569', borderRadius: 2, flex: 1 }}
-            >
+            <Button variant="outlined" onClick={() => setDeleteDialog((d) => ({ ...d, open: false }))}
+              sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569', borderRadius: 2, flex: 1 }}>
               Cancel
             </Button>
-            <Button
-              variant="contained"
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              sx={{
-                textTransform: 'none', bgcolor: '#ef4444', borderRadius: 2, flex: 1,
-                '&:hover': { bgcolor: '#dc2626' },
-              }}
-              startIcon={isDeleting ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <Delete />}
-            >
+            <Button variant="contained" onClick={handleDeleteConfirm} disabled={isDeleting}
+              sx={{ textTransform: 'none', bgcolor: '#ef4444', borderRadius: 2, flex: 1, '&:hover': { bgcolor: '#dc2626' } }}
+              startIcon={isDeleting ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <Delete />}>
               {isDeleting ? 'Deleting…' : 'Yes, Delete'}
             </Button>
           </DialogActions>
         </Dialog>
 
-        {/* ── Snackbar ── */}
+        {/* Snackbar */}
         <Snackbar
-          open={snackbar.open}
-          autoHideDuration={4000}
+          open={snackbar.open} autoHideDuration={4000}
           onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
-          <Alert
-            onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-            severity={snackbar.severity}
-            sx={{ width: '100%', borderRadius: 2 }}
-            icon={snackbar.severity === 'success' ? <CheckCircle /> : undefined}
-          >
+          <Alert onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+            severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2 }}
+            icon={snackbar.severity === 'success' ? <CheckCircle /> : undefined}>
             {snackbar.message}
           </Alert>
         </Snackbar>

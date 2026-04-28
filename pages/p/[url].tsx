@@ -116,6 +116,7 @@ function ProductPage(props: Props) {
 
   const unitOfMeasurement = (product as any)?.unit_of_measurement ?? (product as any)?.uom ?? ''
   const minQty = (product as any)?.mqa ?? null
+  const [orderQty, setOrderQty] = useState<number>(minQty || 1)
 
   const unitOfMeasurementLabel = getUnitLabel(unitOfMeasurement, attributeData)
   const [dialogState, setDialogState] = useState<{
@@ -370,7 +371,7 @@ function ProductPage(props: Props) {
                 </Box>
 
                 {/* -------------------- B2B ACTION SECTION -------------------- */}
-
+                {/* -------------------- B2B ACTION SECTION -------------------- */}
                 <Box
                   sx={{
                     mt: 2,
@@ -381,211 +382,208 @@ function ProductPage(props: Props) {
                     backgroundColor: 'background.paper',
                   }}
                 >
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', md: '1fr auto 1fr' },
-                      columnGap: 3,
-                      rowGap: { xs: 2, md: 0 },
-                      alignItems: 'start',
-                    }}
-                  >
-                    {/* -------------------- LEFT: Qty + Submit -------------------- */}
-                    <Box>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          gap: { xs: 1, sm: 1.5 },
-                          flexDirection: 'row', // Changed to row for both mobile and desktop
-                          justifyContent: { xs: 'stretch', md: 'flex-start' },
-                        }}
-                      >
+                  {/* ── ROW 1: Qty stepper + Unit + Submit ── */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
 
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {/* Quantity Input */}
-                          <Box
-                            component="input"
-                            type="number"
-                            min={minQty || 1}
-                            defaultValue={minQty || 1}
-                            sx={{
-                              flex: 1,   // 🔥 important
-                              height: 36,
-                              px: 1.25,
-                              border: '1px solid',
-                              borderColor: 'black',
-                              borderRadius: 1,
-                            }}
-                          />
-
-                          {/* Unit Box */}
-                          <Box
-                            sx={{
-                              flex: 1,   // 🔥 same width as qty
-                              height: 36,
-                              px: 1.25,
-                              border: '1px solid',
-                              borderColor: 'black',
-                              borderRadius: 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              backgroundColor: '#f5f5f5',
-                            }}
-                          >
-                            {unitOfMeasurementLabel}
-                          </Box>
-
-
-                        </Box>
-                      </Box>
-
-                      <Button
-                        variant="outlined"
-                        onClick={() => openDialog('SUBMIT_REQUIREMENT')}
-                        sx={{
-                          mt: 1.5,
-                          width: '100%',
-                          height: { xs: 32, sm: 36 },
-                          justifyContent: 'flex-start',
-                          fontSize: { xs: '13px !important', sm: '15px !important' },
-                          fontWeight: 500,
-                          textTransform: 'none',
-                          borderRadius: 1,
-                          px: { xs: 1, sm: 1.5 },
-                        }}
-                      >
-                        Submit Requirement
-                      </Button>
-                    </Box>
-
-                    {/* -------------------- CENTER DIVIDER -------------------- */}
-                    <Box
-                      sx={{
-                        display: { xs: 'none', md: 'flex' },
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        px: 1.5,
-                        position: 'relative',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: '1px',
-                          height: '80px',
-                          backgroundColor: 'divider',
-                        }}
-                      />
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          backgroundColor: 'background.paper',
-                          px: 1,
-                          py: 0.5,
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: 'text.secondary',
-                        }}
-                      >
-                        OR
-                      </Box>
-                    </Box>
-
-                    {/* Horizontal divider for mobile with OR text */}
-                    <Box
-                      sx={{
-                        display: { xs: 'flex', md: 'none' },
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
-                        my: 1,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: '1px',
-                          backgroundColor: 'divider',
-                        }}
-                      />
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          backgroundColor: 'background.paper',
-                          px: 2,
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: 'text.secondary',
-                        }}
-                      >
-                        OR
-                      </Box>
-                    </Box>
-
-                    {/* -------------------- RIGHT: Get Quote / Notify -------------------- */}
+                    {/* Quantity with stepper */}
                     <Box
                       sx={{
                         display: 'flex',
-                        flexDirection: { xs: 'row', sm: 'column' }, // Row on mobile, column on desktop
-                        gap: { xs: 1, sm: 2 },
                         alignItems: 'stretch',
+                        height: 40,
+                        border: '1.5px solid',
+                        borderColor: 'primary.main',
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                        flexShrink: 0,
                       }}
                     >
-                      <Button
-                        variant="outlined"
-                        startIcon={<RequestQuoteIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: '#1976d2' }} />}
+                      <Box
+                        component="button"
+                        type="button"
+                        onClick={() => setOrderQty(q => Math.max(minQty || 1, q - 1))}
                         sx={{
-                          width: '100%',
-                          height: { xs: 32, sm: 36 },
-                          justifyContent: 'flex-start',
-                          fontSize: { xs: '13px !important', sm: '15px !important' },
-                          fontWeight: 500,
-                          textTransform: 'none',
-                          px: { xs: 1, sm: 1.5 },
+                          width: 32,
+                          border: 'none',
+                          borderRight: '1px solid',
+                          borderColor: 'primary.light',
+                          backgroundColor: '#e8f0fe',
+                          color: 'primary.main',
+                          fontSize: '18px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          '&:hover': { backgroundColor: '#c5d9f8' },
                         }}
                       >
-
-                        <Box sx={{ display: 'none' }}>
-                          <AddProductsToCartView product={product} />
-                        </Box>
-                        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                          <ProductPageAddToCartActionsRow product={product}>
-                            <CustomAddProductsToCartButton product={product} />
-                          </ProductPageAddToCartActionsRow>
-                        </Box>
-                        <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
-                          Quote
-                        </Box>
-                      </Button>
-
-                      <Button
-                        variant="outlined"
-                        startIcon={<NotificationsActiveIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: '#F9A825' }} />}
-                        onClick={() => openDialog('NOTIFY_SELLER')}
+                        −
+                      </Box>
+                      <Box
+                        component="input"
+                        type="number"
+                        min={minQty || 1}
+                        value={orderQty}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setOrderQty(Math.max(minQty || 1, Number(e.target.value) || 1))
+                        }
                         sx={{
-                          width: '100%',
-                          height: { xs: 32, sm: 36 },
-                          justifyContent: 'flex-start',
-                          fontSize: { xs: '13px !important', sm: '15px !important' },
+                          width: '52px',
+                          border: 'none',
+                          outline: 'none',
+                          textAlign: 'center',
+                          fontSize: '15px',
                           fontWeight: 500,
-                          textTransform: 'none',
-                          px: { xs: 1, sm: 1.5 },
+                          color: 'text.primary',
+                          backgroundColor: 'background.paper',
+                          '&::-webkit-inner-spin-button': { display: 'none' },
+                          '&::-webkit-outer-spin-button': { display: 'none' },
+                          MozAppearance: 'textfield',
+                        }}
+                      />
+                      <Box
+                        component="button"
+                        type="button"
+                        onClick={() => setOrderQty(q => q + 1)}
+                        sx={{
+                          width: 32,
+                          border: 'none',
+                          borderLeft: '1px solid',
+                          borderColor: 'primary.light',
+                          backgroundColor: '#e8f0fe',
+                          color: 'primary.main',
+                          fontSize: '18px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          '&:hover': { backgroundColor: '#c5d9f8' },
                         }}
                       >
-                        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                          Notify Seller
-                        </Box>
-                        <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
-                          Notify
-                        </Box>
-                      </Button>
+                        +
+                      </Box>
                     </Box>
+
+                    {/* Unit — read-only pill */}
+                    <Box
+                      sx={{
+                        height: 40,
+                        px: 1.5,
+                        border: '1.5px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        backgroundColor: 'action.hover',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        color: 'text.secondary',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {unitOfMeasurementLabel}
+                    </Box>
+
+                    {/* Submit Requirement — primary CTA */}
+                    <Button
+                      variant="contained"
+                      type="button"
+                      onClick={() => openDialog('SUBMIT_REQUIREMENT')}
+                      disableElevation
+                      sx={{
+                        flex: 1,
+                        height: 40,
+                        border: '1.5px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        fontSize: '13px !important',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        backgroundColor: 'action.hover',
+                        letterSpacing: '0.2px',
+                        minWidth: 0,
+                      }}
+                    >
+                      Submit Requirement
+                    </Button>
+                  </Box>
+
+                  {/* ── OR Divider ── */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, my: 1.5 }}>
+                    <Box sx={{ flex: 1, height: '1px', backgroundColor: 'divider' }} />
+                    <Typography sx={{ fontSize: '11px', fontWeight: 600, color: 'text.disabled', letterSpacing: '0.5px' }}>
+                      OR
+                    </Typography>
+                    <Box sx={{ flex: 1, height: '1px', backgroundColor: 'divider' }} />
+                  </Box>
+
+                  {/* ── ROW 2: Add to Quote + Notify Seller ── */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+
+                    {/* Add to Quote */}
+                    <Button
+                      variant="outlined"
+                      type="button"
+                      startIcon={<RequestQuoteIcon sx={{ fontSize: '16px !important', color: '#1976d2', flexShrink: 0 }} />}
+                      sx={{
+                        height: 40,
+                        justifyContent: 'center',
+                        fontSize: '13px !important',
+                        fontWeight: 500,
+                        textTransform: 'none',
+                        borderRadius: 1,
+                        px: 1,
+                        minWidth: 0,
+                        borderWidth: '1.5px',
+                        '& .MuiButton-startIcon': { mr: 0.75 },
+                        '&:hover': { borderWidth: '1.5px', backgroundColor: '#e8f0fe' },
+                      }}
+                    >
+                      <Box sx={{ display: 'none' }}>
+                        <AddProductsToCartView product={product} />
+                      </Box>
+                      <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                        <ProductPageAddToCartActionsRow product={product}>
+                          <CustomAddProductsToCartButton product={product} />
+                        </ProductPageAddToCartActionsRow>
+                      </Box>
+                      <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                        Add to Quote
+                      </Box>
+                    </Button>
+
+                    {/* Notify Seller */}
+                    <Button
+                      variant="outlined"
+                      type="button"
+                      startIcon={<NotificationsActiveIcon sx={{ fontSize: '16px !important', color: '#F9A825', flexShrink: 0 }} />}
+                      onClick={() => openDialog('NOTIFY_SELLER')}
+                      sx={{
+                        height: 40,
+                        justifyContent: 'center',
+                        fontSize: '13px !important',
+                        fontWeight: 500,
+                        textTransform: 'none',
+                        borderRadius: 1,
+                        px: 1,
+                        minWidth: 0,
+                        borderWidth: '1.5px',
+                        '& .MuiButton-startIcon': { mr: 0.75 },
+                        '&:hover': { borderWidth: '1.5px', borderColor: '#F9A825', backgroundColor: '#fffde7' },
+                      }}
+                    >
+                      <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                        Notify Seller
+                      </Box>
+                      <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                        Notify
+                      </Box>
+                    </Button>
                   </Box>
                 </Box>
-
 
 
                 <CustomProductSpecs title='' {...products} />
@@ -697,7 +695,8 @@ function ProductPage(props: Props) {
                 currentSku={product.sku}
               />
             )}
-            <SellerReviews averageRating={4} totalReviews={93} />
+            {sellerId && <SellerReviews sellerId={sellerId} />}
+
           </Box>
 
           {/* RIGHT: 25% — Sell on QtyBiz CTA */}
@@ -734,7 +733,7 @@ function ProductPage(props: Props) {
                   🏪 Sell on QtyBiz
                 </Typography>
                 <Typography sx={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)', mt: 0.5 }}>
-                  Reach 10,000+ verified B2B buyers
+                  Reach verified buyers
                 </Typography>
               </Box>
 
@@ -745,7 +744,7 @@ function ProductPage(props: Props) {
                   { icon: '🏭', text: 'Direct manufacturer reach' },
                   { icon: '💬', text: 'Get genuine trade leads' },
                   { icon: '🌍', text: 'Pan-India buyer network' },
-                  { icon: '📊', text: 'Seller dashboard & analytics' },
+                  { icon: '📊', text: 'Seller dashboard' },
                 ].map(({ icon, text }) => (
                   <Box
                     key={text}

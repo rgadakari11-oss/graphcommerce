@@ -18,7 +18,7 @@ const { classes } = extendableComponent(name, parts)
 export function CustomProductSpecs(props: CustomProductSpecsProps) {
   const { aggregations, items, title, children, sx = [] } = props
 
-  const filter = ['price', 'category_id', 'size', 'new', 'sale', 'color']
+  const filter = ['price', 'category_id', 'size', 'new', 'sale', 'color', 'seller_id']
 
   const specs =
     aggregations?.filter(

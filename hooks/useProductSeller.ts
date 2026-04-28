@@ -12,6 +12,11 @@ const SELLER_BY_ID_QUERY = gql`
       city
       phone
       trust_seal
+      gst_number
+      secure_badge
+      buyer_protected_badge
+      on_time_delivery_badge
+      star_supplier_badge
     }
   }
 `

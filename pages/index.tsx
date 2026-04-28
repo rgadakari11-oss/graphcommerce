@@ -318,7 +318,7 @@ function IndexPage(props: LayoutNavigationProps) {
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={7}>
               <Chip
-                label="🇮🇳  Made in India · For Indian Businesses"
+                label="🇮🇳  Made in India · Built for Indian Businesses"
                 size="small"
                 sx={{
                   bgcolor: 'rgba(255,255,255,.1)',
@@ -352,7 +352,7 @@ function IndexPage(props: LayoutNavigationProps) {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  Marketplace
+                  Marketplace for Businesses
                 </Box>
               </Typography>
               <Typography
@@ -365,8 +365,7 @@ function IndexPage(props: LayoutNavigationProps) {
                   fontFamily: '"DM Sans", sans-serif',
                 }}
               >
-                Connect with verified suppliers across multiple industries. Post requirements, receive
-                competitive bulk quotes, and grow your procurement network.
+                Connect with verified suppliers, get competitive bulk quotes, and simplify your procurement — all in one place.
               </Typography>
 
               <Box
@@ -459,10 +458,10 @@ function IndexPage(props: LayoutNavigationProps) {
                       mb: 0.4,
                     }}
                   >
-                    ⚡ Seamless Procurement Flow
+                    ⚡ Seamless Procurement, Simplified
                   </Typography>
                   <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: '0.78rem' }}>
-                    From requirement to delivery — simplified
+                    From requirement to delivery — manage everything in one smooth flow
                   </Typography>
                 </Box>
 
@@ -471,25 +470,25 @@ function IndexPage(props: LayoutNavigationProps) {
                     {
                       step: '01',
                       icon: '🧾',
-                      title: 'Multi-Seller Quotes — Add product to quote and get offers from verified sellers.',
+                      title: 'Add your prodct to quote and Get Multiple Quotes',
                       sub: 'Add products and receive competitive offers from verified sellers.',
                     },
                     {
                       step: '02',
                       icon: '💰',
-                      title: 'Flexible Bulk Pricing — Volume-based quotes tailored to your order size.',
+                      title: ' Volume-based flexible Bulk Pricing.',
                       sub: 'Tailored quotes based on your bulk volume and requirements.',
                     },
                     {
                       step: '03',
                       icon: '🤝',
-                      title: 'Direct Negotiations — Negotiate terms, shipping & lead times instantly.',
+                      title: 'Direct Negotiate pricing, delivery timelines suppliers.',
                       sub: 'Message sellers to finalize terms, shipping, and lead times.',
                     },
                     {
                       step: '04',
                       icon: '🛟',
-                      title: '24/7 Trade Support — From first inquiry to final delivery, we have got you.',
+                      title: 'End-to-End Support from first inquiry to final delivery',
                       sub: 'Our team assists you from inquiry to final delivery.',
                     },
                   ].map((item, i, arr) => (
@@ -567,7 +566,7 @@ function IndexPage(props: LayoutNavigationProps) {
                       '&:hover': { background: 'linear-gradient(90deg, #ea580c, #c2410c)' },
                     }}
                   >
-                    Register — Free
+                    Start Selling — Free
                   </Button>
                 </Box>
               </Paper>

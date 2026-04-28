@@ -7,7 +7,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.useProductSeller = useProductSeller;
 var client_1 = require("@apollo/client");
 var react_1 = require("react");
-var SELLER_BY_ID_QUERY = (0, client_1.gql)(templateObject_1 || (templateObject_1 = __makeTemplateObject(["\n  query SellerById($customer_id: Int!) {\n    vendorStores(customer_id: $customer_id) {\n      customer_id\n      store_name\n      store_code\n      years_in_business\n      area\n      city\n      phone\n      trust_seal\n    }\n  }\n"], ["\n  query SellerById($customer_id: Int!) {\n    vendorStores(customer_id: $customer_id) {\n      customer_id\n      store_name\n      store_code\n      years_in_business\n      area\n      city\n      phone\n      trust_seal\n    }\n  }\n"])));
+var SELLER_BY_ID_QUERY = (0, client_1.gql)(templateObject_1 || (templateObject_1 = __makeTemplateObject(["\n  query SellerById($customer_id: Int!) {\n    vendorStores(customer_id: $customer_id) {\n      customer_id\n      store_name\n      store_code\n      years_in_business\n     gst_number\n secure_badge\n buyer_protected_badge\n on_time_delivery_badge\n star_supplier_badge\n  area\n      city\n      phone\n      trust_seal\n    }\n  }\n"], ["\n  query SellerById($customer_id: Int!) {\n    vendorStores(customer_id: $customer_id) {\n      customer_id\n      store_name\n      store_code\n      years_in_business\n      area\n      city\n      phone\n      trust_seal\n  gst_number\n secure_badge\n buyer_protected_badge\n on_time_delivery_badge\n star_supplier_badge\n  }\n  }\n"])));
 function useProductSeller(sellerId) {
     var _a = (0, client_1.useQuery)(SELLER_BY_ID_QUERY, {
         variables: { customer_id: Number(sellerId) },

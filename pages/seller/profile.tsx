@@ -158,7 +158,7 @@ type StoreData = {
   firstname: string
   lastname: string
   whatsapp_number: string
-  businesscategories: string[]
+  businesscategories: string
 }
 
 // Maps each section to the input fields it is responsible for.

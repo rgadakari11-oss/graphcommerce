@@ -150,7 +150,7 @@ export function SupplierInfoCard({ seller, productId, sellerId }: Props) {
           </Tooltip>
         )}
 
-        {seller?.trust_seal && (
+        {seller?.buyer_protected_badge && (
           <Tooltip title="Top rated seller" arrow>
             <Box
               component="a"
@@ -162,20 +162,20 @@ export function SupplierInfoCard({ seller, productId, sellerId }: Props) {
                 px: '6px',
                 py: '2px',
                 borderRadius: '6px',
-                backgroundColor: sellerColors.topSeller.bg,
+                backgroundColor: sellerColors.trusted.bg,
                 textDecoration: 'none',
               }}
             >
-              <CheckCircleIcon sx={{ fontSize: 14, color: sellerColors.topSeller.icon }} />
+              <CheckCircleIcon sx={{ fontSize: 14, color: sellerColors.trusted.icon }} />
               <Typography
                 sx={{
                   fontSize: '11px !important',
                   fontWeight: 600,
-                  color: sellerColors.topSeller.text,
+                  color: sellerColors.trusted.text,
                   lineHeight: 1,
                 }}
               >
-                Top Seller
+                Buyer Protected
               </Typography>
             </Box>
           </Tooltip>
@@ -243,6 +243,62 @@ export function SupplierInfoCard({ seller, productId, sellerId }: Props) {
               borderRadius: '6px',
             }}
           />
+        )}
+
+        {seller?.secure_badge && (
+          <Tooltip title="Responds quickly" arrow>
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                px: '6px',
+                py: '2px',
+                borderRadius: '6px',
+                backgroundColor: '#E3F2FD',
+              }}
+            >
+              <CheckCircleIcon sx={{ fontSize: 14, color: '#1565C0' }} />
+              <Typography
+                sx={{
+                  fontSize: '11px !important',
+                  fontWeight: 600,
+                  color: '#0D47A1',
+                  lineHeight: 1,
+                }}
+              >
+                Secure
+              </Typography>
+            </Box>
+          </Tooltip>
+        )}
+
+        {seller?.on_time_delivery_badge && (
+          <Tooltip title="Responds quickly" arrow>
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                px: '6px',
+                py: '2px',
+                borderRadius: '6px',
+                backgroundColor: '#E3F2FD',
+              }}
+            >
+              <CheckCircleIcon sx={{ fontSize: 14, color: '#1565C0' }} />
+              <Typography
+                sx={{
+                  fontSize: '11px !important',
+                  fontWeight: 600,
+                  color: '#0D47A1',
+                  lineHeight: 1,
+                }}
+              >
+                On-Time Delivery
+              </Typography>
+            </Box>
+          </Tooltip>
         )}
       </Box>
 

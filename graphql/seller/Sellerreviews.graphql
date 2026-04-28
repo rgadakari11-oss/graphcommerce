@@ -1,0 +1,42 @@
+# -------------------------------
+# Query: Get Seller Reviews
+# -------------------------------
+query SellerReviews($seller_id: Int!) {
+  sellerReviews(seller_id: $seller_id) {
+    id
+    seller_id
+    customer_name
+    customer_email
+    customer_mobile
+    company_name
+    rating
+    review
+    created_at
+  }
+}
+
+# -------------------------------
+# Mutation: Add Seller Review
+# -------------------------------
+mutation AddSellerReview(
+  $seller_id: Int!
+  $customer_name: String!
+  $customer_email: String!
+  $customer_mobile: String
+  $company_name: String
+  $rating: Int!
+  $review: String!
+) {
+  addSellerReview(
+    seller_id: $seller_id
+    customer_name: $customer_name
+    customer_email: $customer_email
+    customer_mobile: $customer_mobile
+    company_name: $company_name
+    rating: $rating
+    review: $review
+  ) {
+    success
+    message
+  }
+}

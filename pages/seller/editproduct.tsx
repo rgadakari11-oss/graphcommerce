@@ -3,7 +3,6 @@ import { cacheFirst } from '@graphcommerce/graphql'
 import { PageMeta, StoreConfigDocument } from '@graphcommerce/magento-store'
 import type { GetStaticProps } from '@graphcommerce/next-ui'
 import { i18n } from '@lingui/core'
-import { Trans } from '@lingui/react'
 import {
   Box,
   Typography,
@@ -14,10 +13,6 @@ import {
   Stepper,
   Step,
   StepLabel,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Chip,
   IconButton,
   Stack,
@@ -59,9 +54,11 @@ import { SellerAccountLayout } from '../../components/account/Selleraccountlayou
 import { graphqlSharedClient, graphqlSsrClient } from '../../lib/graphql/graphqlSsrClient'
 import { gql, useMutation, useQuery } from '@apollo/client'
 import { useRouter } from 'next/router'
-
 import { ImageUploadManager } from '../../components/seller/ImageUploadManager'
 import { ProductQualityScore } from '../../components/seller/ProductQualityScore'
+import { CategoryMultiSelect } from '../../components/seller/CategoryMultiSelect'
+import type { MainCategory } from '../../components/seller/CategoryMultiSelect'
+import { getSellerId } from '../../lib/utils/getMobileNumber'
 
 type Props = Record<string, unknown>
 type GetPageStaticProps = GetStaticProps<LayoutNavigationProps, Props>
@@ -75,29 +72,13 @@ const GET_PRODUCT_QUERY = gql`
         uid
         sku
         name
-        description {
-          html
-        }
-        categories {
-          uid
-          name
-          url_key
-        }
-        small_image {
-          url
-          label
-        }
-        media_gallery {
-          url
-          label
-          position
-        }
+        description { html }
+        categories { uid name url_key }
+        small_image { url label }
+        media_gallery { url label position }
         price_range {
           minimum_price {
-            regular_price {
-              value
-              currency
-            }
+            regular_price { value currency }
           }
         }
         special_price
@@ -110,21 +91,38 @@ const GET_PRODUCT_QUERY = gql`
   }
 `
 
-/**
- * Fetch the selectable options for the `unit_of_measurement` custom attribute.
- * `customAttributeMetadata` is available in Magento 2 GraphQL out of the box.
- */
 const GET_UNIT_OPTIONS_QUERY = gql`
   query GetUnitOfMeasurementOptions {
     customAttributeMetadata(
       attributes: [{ entity_type: "catalog_product", attribute_code: "unit_of_measurement" }]
     ) {
       items {
-        attribute_options {
-          label
-          value
-        }
+        attribute_options { label value }
       }
+    }
+  }
+`
+
+const GET_CATEGORY_ATTRIBUTES_QUERY = gql`
+  query GetCategoryAttributes($categoryIds: [Int!]!) {
+    getCategoryAttributes(category_ids: $categoryIds) {
+      attribute_id
+      attribute_code
+      label
+      backend_type
+      input_type
+      attribute_group
+      sort_order
+      options { label value }
+    }
+  }
+`
+
+const GET_SELLER_BUSINESS_CATEGORIES_QUERY = gql`
+  query GetSellerBusinessCategories($seller_id: Int!) {
+    getSellerBusinessCategories(seller_id: $seller_id) {
+      seller_id
+      businesscategories
     }
   }
 `
@@ -134,11 +132,7 @@ const UPDATE_PRODUCT_MUTATION = gql`
     updateProduct(sku: $sku, input: $input) {
       success
       message
-      product {
-        id
-        sku
-        name
-      }
+      product { id sku name }
       errors
     }
   }
@@ -149,11 +143,7 @@ const UPLOAD_PRODUCT_IMAGE_MUTATION = gql`
     uploadProductImage(sku: $sku, images: $images) {
       success
       message
-      files {
-        file_path
-        full_url
-        type
-      }
+      files { file_path full_url type }
     }
   }
 `
@@ -172,119 +162,136 @@ interface UnitOption {
   value: string
 }
 
+interface AttributeOption {
+  label: string
+  value: string
+}
+
+interface CategoryAttribute {
+  attribute_id: number
+  attribute_code: string
+  label: string
+  backend_type: string
+  input_type: 'select' | 'text' | 'multiselect' | string
+  attribute_group: string
+  sort_order: number
+  options: AttributeOption[]
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const SELLER_AUTH_KEY = 'seller-auth'
 
-const getSellerEmailFromLocalStorage = (): string | null => {
+const getSellerEmail = (): string | null => {
   if (typeof window === 'undefined') return null
   try {
     const raw = localStorage.getItem(SELLER_AUTH_KEY)
     if (!raw) return null
     return JSON.parse(raw).email || null
-  } catch {
-    return null
-  }
+  } catch { return null }
 }
 
-const categories = [
-  {
-    id: 'electronics',
-    name: 'Electronics & Electrical',
-    subCategories: [
-      { id: 'mobile', name: 'Mobile Phones & Accessories' },
-      { id: 'computer', name: 'Computer & Laptop' },
-      { id: 'camera', name: 'Camera & Photography' },
-      { id: 'home-appliances', name: 'Home Appliances' },
-    ],
-  },
-  {
-    id: 'fashion',
-    name: 'Fashion & Apparel',
-    subCategories: [
-      { id: 'mens-clothing', name: "Men's Clothing" },
-      { id: 'womens-clothing', name: "Women's Clothing" },
-      { id: 'kids-clothing', name: "Kids' Clothing" },
-      { id: 'footwear', name: 'Footwear' },
-    ],
-  },
-  {
-    id: 'home',
-    name: 'Home & Furniture',
-    subCategories: [
-      { id: 'furniture', name: 'Furniture' },
-      { id: 'home-decor', name: 'Home Decor' },
-      { id: 'kitchen', name: 'Kitchen & Dining' },
-      { id: 'bedding', name: 'Bedding & Bath' },
-    ],
-  },
-  {
-    id: 'industrial',
-    name: 'Industrial & Manufacturing',
-    subCategories: [
-      { id: 'machinery', name: 'Machinery & Equipment' },
-      { id: 'tools', name: 'Tools & Hardware' },
-      { id: 'raw-materials', name: 'Raw Materials' },
-      { id: 'packaging', name: 'Packaging Materials' },
-    ],
-  },
-]
+/** Parse a datetime string like "2026-04-28 00:00:00" → "2026-04-28" for date inputs */
+function toDateInputValue(raw: string | null | undefined): string {
+  if (!raw) return ''
+  // If it contains a space (datetime format), take only the date part
+  return raw.includes(' ') ? raw.split(' ')[0] : raw.split('T')[0]
+}
 
 const steps = ['Product Details', 'Specifications', 'Review & Update']
 
-// ─── Page Component ───────────────────────────────────────────────────────────
+// ─── Helper ───────────────────────────────────────────────────────────────────
 
-function ProductEditPage() {
+function findCategoryName(categories: MainCategory[], uid: string): string {
+  for (const m of categories) {
+    if (m.uid === uid) return m.name
+    for (const s of m.children ?? []) {
+      if (s.uid === uid) return s.name
+      for (const mc of s.children ?? []) {
+        if (mc.uid === uid) return mc.name
+      }
+    }
+  }
+  return uid
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
+
+function ProductEditPage({ menu }: LayoutNavigationProps) {
   const router = useRouter()
   const sku = router.query.sku as string | undefined
+  const customerQuery = useCustomerQuery(CustomerDocument, { fetchPolicy: 'cache-and-network' })
 
-  const customerQuery = useCustomerQuery(CustomerDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  // ── Resolve seller id on mount (client-only) ──────────────────────────────
+  const [sellerId, setSellerId] = useState<number | undefined>(undefined)
 
-  // Fetch existing product
-  const {
-    data: productQueryData,
-    loading: productLoading,
-    error: productError,
-  } = useQuery(GET_PRODUCT_QUERY, {
-    variables: { sku },
-    skip: !sku,
-    fetchPolicy: 'network-only',
-  })
+  useEffect(() => {
+    const id = getSellerId()
+    if (id) setSellerId(Number(id))
+  }, [])
 
-  // Fetch unit_of_measurement attribute options
-  const { data: unitOptionsData, loading: unitOptionsLoading } = useQuery(GET_UNIT_OPTIONS_QUERY, {
-    fetchPolicy: 'cache-first', // attribute options rarely change — cache is fine here
-  })
-
-  // Derive the list of predefined unit options from the attribute metadata
-  const predefinedUnitOptions: UnitOption[] = useMemo(() => {
-    const items = unitOptionsData?.customAttributeMetadata?.items ?? []
-    if (!items.length) return []
-    return (items[0]?.attribute_options ?? []) as UnitOption[]
-  }, [unitOptionsData])
-
-  const [updateProduct, { loading: isUpdating }] = useMutation(UPDATE_PRODUCT_MUTATION)
-  const [uploadProductImageMutation, { loading: isUploadingImages }] = useMutation(
-    UPLOAD_PRODUCT_IMAGE_MUTATION
+  // ── All main categories from LayoutDocument menu ──────────────────────────
+  const allMainCategories: MainCategory[] = useMemo(
+    () => (menu?.items?.[0]?.children ?? []) as MainCategory[],
+    [menu],
   )
 
-  // ── form state ──────────────────────────────────────────────────────────────
+  // ── Fetch seller's registered business categories ─────────────────────────
+  const {
+    data: businessCategoryData,
+    loading: businessCategoriesLoading,
+  } = useQuery(GET_SELLER_BUSINESS_CATEGORIES_QUERY, {
+    variables: { seller_id: sellerId },
+    skip: sellerId === undefined || sellerId === null || isNaN(sellerId as number),
+    fetchPolicy: 'cache-first',
+  })
+
+  const sellerBusinessCategoryNames: string[] = useMemo(
+    () => businessCategoryData?.getSellerBusinessCategories?.businesscategories ?? [],
+    [businessCategoryData],
+  )
+
+  // ── Filter to seller's allowed categories only ────────────────────────────
+  // While loading: return empty so skeleton is shown
+  // If empty result or no sellerId: fall back to all categories
+  const mainCategories: MainCategory[] = useMemo(() => {
+    if (businessCategoriesLoading) return []
+    if (!sellerBusinessCategoryNames.length) return allMainCategories
+    const normalised = new Set(sellerBusinessCategoryNames.map((n) => n.trim().toLowerCase()))
+    const filtered = allMainCategories.filter((c) => normalised.has(c.name.trim().toLowerCase()))
+    return filtered.length > 0 ? filtered : allMainCategories
+  }, [allMainCategories, sellerBusinessCategoryNames, businessCategoriesLoading])
+
+  // ── Product + unit queries ────────────────────────────────────────────────
+  const { data: productData, loading: productLoading, error: productError } = useQuery(
+    GET_PRODUCT_QUERY,
+    { variables: { sku }, skip: !sku, fetchPolicy: 'network-only' },
+  )
+
+  const { data: unitOptionsData, loading: unitOptionsLoading } = useQuery(GET_UNIT_OPTIONS_QUERY, {
+    fetchPolicy: 'cache-first',
+  })
+
+  const predefinedUnitOptions: UnitOption[] = useMemo(() => {
+    const items = unitOptionsData?.customAttributeMetadata?.items ?? []
+    return items.length ? (items[0]?.attribute_options ?? []) : []
+  }, [unitOptionsData])
+
+  // ── Mutations ─────────────────────────────────────────────────────────────
+  const [updateProduct, { loading: isUpdating }] = useMutation(UPDATE_PRODUCT_MUTATION)
+  const [uploadImages, { loading: isUploadingImages }] = useMutation(UPLOAD_PRODUCT_IMAGE_MUTATION)
+
+  // ── Form state ────────────────────────────────────────────────────────────
   const [activeStep, setActiveStep] = useState(0)
   const [isPopulated, setIsPopulated] = useState(false)
+  const [rawUnitId, setRawUnitId] = useState('')
 
-  // Keeps the raw option id (e.g. "67") from the product response so we can
-  // resolve it to a label once predefinedUnitOptions has finished loading.
-  const [rawUnitId, setRawUnitId] = useState<string>('')
-
-  const [productData, setProductData] = useState({
+  const [form, setForm] = useState({
     name: '',
     price: '',
     specialPrice: '',
-    specialPriceFrom: '',
-    specialPriceTo: '',
-    // unitText is always the human-readable label sent to the API — never an option id/value
+    specialPriceFrom: '',   // stored as YYYY-MM-DD for date input
+    specialPriceTo: '',     // stored as YYYY-MM-DD for date input
     unitText: '',
     minOrderQty: '',
     description: '',
@@ -295,196 +302,215 @@ function ProductEditPage() {
   })
 
   const [images, setImages] = useState<ImageData[]>([])
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [selectedSubCategory, setSelectedSubCategory] = useState('')
+  const [selectedCategoryUids, setSelectedCategoryUids] = useState<string[]>([])
+  const [attributeValues, setAttributeValues] = useState<Record<string, string>>({})
   const [categoryRequestOpen, setCategoryRequestOpen] = useState(false)
   const [requestedCategory, setRequestedCategory] = useState('')
-
-  const [errors, setErrors] = useState({
-    name: false,
-    images: false,
-    price: false,
-    category: false,
-  })
-
+  const [errors, setErrors] = useState({ name: false, images: false, price: false, category: false })
   const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success' as 'success' | 'error' | 'info',
+    open: false, message: '', severity: 'success' as 'success' | 'error' | 'info',
   })
 
-  // ── Populate form from fetched product ──────────────────────────────────────────────
+  // ── Decode selected uids to numeric category ids ──────────────────────────
+  const selectedCategoryIds = useMemo(() =>
+    selectedCategoryUids.map((uid) => {
+      try { return parseInt(atob(uid), 10) }
+      catch { return parseInt(uid, 10) }
+    }).filter(Boolean),
+    [selectedCategoryUids])
+
+  // ── Category attributes query ─────────────────────────────────────────────
+  const { data: categoryAttributesData, loading: categoryAttributesLoading } = useQuery(
+    GET_CATEGORY_ATTRIBUTES_QUERY,
+    {
+      variables: { categoryIds: selectedCategoryIds },
+      skip: selectedCategoryIds.length === 0,
+      fetchPolicy: 'cache-first',
+    },
+  )
+
+  const categoryAttributes: CategoryAttribute[] = useMemo(() => {
+    const attrs: CategoryAttribute[] = categoryAttributesData?.getCategoryAttributes ?? []
+    const seen = new Set<string>()
+    return attrs
+      .filter((a) => { if (seen.has(a.attribute_code)) return false; seen.add(a.attribute_code); return true })
+      .sort((a, b) => a.sort_order - b.sort_order)
+  }, [categoryAttributesData])
+
+  const attributesByGroup = useMemo(() => {
+    const groups: Record<string, CategoryAttribute[]> = {}
+    for (const attr of categoryAttributes) {
+      const g = attr.attribute_group || 'General'
+      if (!groups[g]) groups[g] = []
+      groups[g].push(attr)
+    }
+    return groups
+  }, [categoryAttributes])
+
+  const attributeSetName = useMemo(() => {
+    if (!selectedCategoryUids.length || !mainCategories.length) return undefined
+    const selectedSet = new Set(selectedCategoryUids)
+    for (const main of mainCategories) {
+      if (selectedSet.has(main.uid)) return main.name
+      for (const sub of main.children ?? []) {
+        if (selectedSet.has(sub.uid)) return main.name
+        for (const mc of sub.children ?? []) {
+          if (selectedSet.has(mc.uid)) return main.name
+        }
+      }
+    }
+    return undefined
+  }, [selectedCategoryUids, mainCategories])
+
+  // ── Scroll to top on step change ──────────────────────────────────────────
   useEffect(() => {
-    const item = productQueryData?.products?.items?.[0]
+    window.scrollTo({ top: 20, behavior: 'smooth' })
+  }, [activeStep])
+
+  // ── Populate form from product query ──────────────────────────────────────
+  useEffect(() => {
+    const item = productData?.products?.items?.[0]
     if (!item || isPopulated) return
 
-    const rawDescription = item.description?.html ?? ''
-    const plainDescription = rawDescription.replace(/<[^>]*>/g, '')
+    setRawUnitId(item.unit_of_measurement ? String(item.unit_of_measurement) : '')
 
-    // Save the raw Magento value (e.g. "67"). The resolution effect below
-    // maps it to its label once predefinedUnitOptions has finished loading.
-    const rawUnit = item.unit_of_measurement ? String(item.unit_of_measurement) : ''
-    setRawUnitId(rawUnit)
-
-    setProductData((prev) => ({
+    setForm((prev) => ({
       ...prev,
       name: item.name ?? '',
       price: String(item.price_range?.minimum_price?.regular_price?.value ?? ''),
       specialPrice: item.special_price ? String(item.special_price) : '',
-      specialPriceFrom: item.special_from_date ?? '',
-      specialPriceTo: item.special_to_date ?? '',
-      description: plainDescription,
+      // Convert datetime strings to date-only for <input type="date">
+      specialPriceFrom: toDateInputValue(item.special_from_date),
+      specialPriceTo: toDateInputValue(item.special_to_date),
+      description: (item.description?.html ?? '').replace(/<[^>]*>/g, ''),
       productCode: item.sku ?? '',
       minOrderQty: item.mqa ? String(item.mqa) : '',
-      // Leave unitText empty here; it is resolved once options are available
       unitText: '',
     }))
 
-    const galleryImages: ImageData[] = (item.media_gallery ?? []).map((img: any) => ({
-      url: img.url,
-      isExisting: true,
-      isCover: img.position === 1,
+    const gallery: ImageData[] = (item.media_gallery ?? []).map((img: any) => ({
+      url: img.url, isExisting: true, isCover: img.position === 1,
     }))
+    if (!gallery.length && item.small_image?.url)
+      gallery.push({ url: item.small_image.url, isExisting: true, isCover: true })
 
-    if (galleryImages.length === 0 && item.small_image?.url) {
-      galleryImages.push({ url: item.small_image.url, isExisting: true, isCover: true })
-    }
-
-    setImages(galleryImages)
-
-    const firstCat = item.categories?.[0]
-    if (firstCat) {
-      const matchedCat = categories.find(
-        (c) => c.name.toLowerCase() === firstCat.name?.toLowerCase()
-      )
-      if (matchedCat) setSelectedCategory(matchedCat.id)
-    }
-
+    setImages(gallery)
+    setSelectedCategoryUids((item.categories ?? []).map((c: any) => c.uid))
     setIsPopulated(true)
-  }, [productQueryData, isPopulated])
+  }, [productData, isPopulated])
 
-  // ── Resolve raw unit option id → human-readable label ───────────────────────────────────
-  // Runs whenever rawUnitId or predefinedUnitOptions changes, cleanly handling
-  // the race between the product query and the attribute metadata query.
+  // ── Resolve raw unit id → label ───────────────────────────────────────────
   useEffect(() => {
     if (!rawUnitId || !predefinedUnitOptions.length) return
-
-    // Match the option whose `value` equals the raw id, e.g. "67" → "Kilogram"
-    const matched = predefinedUnitOptions.find((opt) => opt.value === rawUnitId)
-
-    // If no match the stored value is already a label string — use as-is
-    const resolvedLabel = matched ? matched.label : rawUnitId
-
-    setProductData((prev) => {
-      if (prev.unitText === resolvedLabel) return prev   // skip redundant re-render
-      return { ...prev, unitText: resolvedLabel }
-    })
+    const matched = predefinedUnitOptions.find((o) => o.value === rawUnitId)
+    const label = matched ? matched.label : rawUnitId
+    setForm((prev) => prev.unitText === label ? prev : { ...prev, unitText: label })
   }, [rawUnitId, predefinedUnitOptions])
 
-  // ── Helpers ────────────────────────────────────────────────────────────────────────────
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-
-  const validateStep = (step: number) => {
-    const newErrors = { name: false, images: false, price: false, category: false }
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const validate = (step: number) => {
+    const e = { name: false, images: false, price: false, category: false }
     if (step === 0) {
-      if (productData.name.trim().split(' ').filter((w) => w.length > 0).length < 3)
-        newErrors.name = true
-      if (images.length === 0) newErrors.images = true
-      if (!productData.price || parseFloat(productData.price) <= 0) newErrors.price = true
-      if (!selectedCategory) newErrors.category = true
+      if (form.name.trim().split(' ').filter(Boolean).length < 3) e.name = true
+      if (!images.length) e.images = true
+      if (!form.price || parseFloat(form.price) <= 0) e.price = true
+      if (!selectedCategoryUids.length) e.category = true
     }
-    setErrors(newErrors)
-    return !Object.values(newErrors).some(Boolean)
+    setErrors(e)
+    return !Object.values(e).some(Boolean)
   }
 
   const handleNext = () => {
-    if (validateStep(activeStep)) setActiveStep((p) => Math.min(p + 1, steps.length - 1))
+    if (validate(activeStep)) setActiveStep((p) => Math.min(p + 1, steps.length - 1))
   }
-
   const handleBack = () => {
     setErrors({ name: false, images: false, price: false, category: false })
     setActiveStep((p) => Math.max(p - 1, 0))
   }
 
-  const handleInputChange =
-    (field: string) =>
-      (event: React.ChangeEvent<HTMLInputElement | { value: unknown }>) => {
-        const val = event.target.value as string
-        setProductData((prev) => ({ ...prev, [field]: val }))
-        if (field === 'name' && errors.name) {
-          if (val.trim().split(' ').filter((w) => w.length > 0).length >= 3)
-            setErrors((e) => ({ ...e, name: false }))
-        }
-        if (field === 'price' && errors.price) {
-          if (parseFloat(val) > 0) setErrors((e) => ({ ...e, price: false }))
-        }
-      }
+  const handleInput = (field: string) =>
+    (e: React.ChangeEvent<HTMLInputElement | { value: unknown }>) => {
+      const val = e.target.value as string
+      setForm((prev) => ({ ...prev, [field]: val }))
+      if (field === 'name' && errors.name && val.trim().split(' ').filter(Boolean).length >= 3)
+        setErrors((prev) => ({ ...prev, name: false }))
+      if (field === 'price' && errors.price && parseFloat(val) > 0)
+        setErrors((prev) => ({ ...prev, price: false }))
+    }
 
-  const fileToBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve((reader.result as string).split(',')[1])
-      reader.onerror = reject
+  const toBase64 = (file: File): Promise<string> =>
+    new Promise((res, rej) => {
+      const r = new FileReader()
+      r.readAsDataURL(file)
+      r.onload = () => res((r.result as string).split(',')[1])
+      r.onerror = rej
     })
 
   const uploadNewImages = async (targetSku: string) => {
-    const newImages = images.filter((img) => !img.isExisting && img.file)
-    if (newImages.length === 0) return
-
-    const imageInputs = await Promise.all(
-      newImages.map(async (image, index) => ({
-        filename: image.file!.name,
-        base64_content: await fileToBase64(image.file!),
-        type: index === 0 ? 'image' : 'gallery',
+    const newImgs = images.filter((i) => !i.isExisting && i.file)
+    if (!newImgs.length) return
+    const inputs = await Promise.all(
+      newImgs.map(async (img, idx) => ({
+        filename: img.file!.name,
+        base64_content: await toBase64(img.file!),
+        type: idx === 0 ? 'image' : 'gallery',
       }))
     )
-
-    const { data } = await uploadProductImageMutation({
-      variables: { sku: targetSku, images: imageInputs },
-    })
-
-    if (!data?.uploadProductImage?.success) {
+    const { data } = await uploadImages({ variables: { sku: targetSku, images: inputs } })
+    if (!data?.uploadProductImage?.success)
       throw new Error(data?.uploadProductImage?.message || 'Failed to upload images')
-    }
   }
 
   const handleUpdate = async () => {
     try {
       if (!sku) return
-
-      const sellerEmail = getSellerEmailFromLocalStorage()
-      if (!sellerEmail) {
+      if (!getSellerEmail()) {
         setSnackbar({ open: true, message: 'Seller session expired. Please login again.', severity: 'error' })
         return
       }
 
-      setSnackbar({ open: true, message: 'Updating product…', severity: 'info' })
+      setSnackbar({ open: true, message: 'Updating product...', severity: 'info' })
+
+      const formattedAttributes = Object.entries(attributeValues || {})
+        .filter(([, value]) => value !== '' && value !== null && value !== undefined)
+        .map(([attribute_code, value]) => ({
+          attribute_code,
+          value: Array.isArray(value) ? value.join(',') : String(value),
+        }))
 
       const input: Record<string, unknown> = {
-        name: productData.name,
-        price: parseFloat(productData.price),
-        description: productData.description || undefined,
-        special_price: productData.specialPrice ? parseFloat(productData.specialPrice) : undefined,
-        special_from_date: productData.specialPriceFrom || undefined,
-        special_to_date: productData.specialPriceTo || undefined,
-        // mqa attribute — send as number
-        mqa: productData.minOrderQty
-          ? String(productData.minOrderQty)
-          : "1",        // unit_of_measurement — always pass the human-readable label text, not an option id
-        unit_of_measurement: productData.unitText || undefined,
+        name: form.name,
+        price: parseFloat(form.price),
+        description: form.description || undefined,
+
+        // Special price — send only when a value exists
+        special_price: form.specialPrice ? parseFloat(form.specialPrice) : undefined,
+        // Date fields — send the YYYY-MM-DD string directly (API accepts this)
+        special_from_date: form.specialPriceFrom || undefined,
+        special_to_date: form.specialPriceTo || undefined,
+
+        mqa: form.minOrderQty ? String(form.minOrderQty) : '1',
+        unit_of_measurement: form.unitText || undefined,
+
+        ...(selectedCategoryUids.length ? {
+          categories: selectedCategoryUids.map((uid) => {
+            try { return parseInt(atob(uid), 10) }
+            catch { return parseInt(uid, 10) }
+          }),
+        } : {}),
+
+        ...(attributeSetName ? { attribute_set: attributeSetName } : {}),
+
+        ...(formattedAttributes.length > 0 ? { custom_attributes: formattedAttributes } : {}),
       }
 
-      const { data: updateData } = await updateProduct({ variables: { sku, input } })
-
-      if (!updateData?.updateProduct?.success) {
-        const msgs = updateData?.updateProduct?.errors?.join(', ') || 'Failed to update product'
-        throw new Error(msgs)
+      const { data: res } = await updateProduct({ variables: { sku, input } })
+      if (!res?.updateProduct?.success) {
+        throw new Error(res?.updateProduct?.errors?.join(', ') || 'Failed to update product')
       }
 
-      const hasNewImages = images.some((img) => !img.isExisting)
-      if (hasNewImages) {
-        setSnackbar({ open: true, message: 'Product updated! Uploading new images…', severity: 'info' })
+      if (images.some((i) => !i.isExisting)) {
+        setSnackbar({ open: true, message: 'Product updated! Uploading images...', severity: 'info' })
         await uploadNewImages(sku)
       }
 
@@ -493,7 +519,7 @@ function ProductEditPage() {
     } catch (err) {
       setSnackbar({
         open: true,
-        message: err instanceof Error ? err.message : 'An error occurred. Please try again.',
+        message: err instanceof Error ? err.message : 'An error occurred.',
         severity: 'error',
       })
     }
@@ -501,8 +527,10 @@ function ProductEditPage() {
 
   const isProcessing = isUpdating || isUploadingImages
 
-  // ── Loading / error states ──────────────────────────────────────────────────
+  // Category section loading = seller id still resolving OR business cats fetching
+  const categoryLoading = businessCategoriesLoading || sellerId === undefined
 
+  // ── Guards ────────────────────────────────────────────────────────────────
   if (!sku) {
     return (
       <SellerAccountLayout>
@@ -540,30 +568,23 @@ function ProductEditPage() {
     )
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
       <PageMeta title={i18n._('Edit Product')} metaRobots={['noindex']} />
-
       <SellerAccountLayout>
         <WaitForCustomer waitFor={customerQuery}>
 
-          {/* Header */}
+          {/* ── Header ── */}
           <Box sx={{ mb: 3 }}>
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-              <IconButton
-                href="/seller/products"
-                sx={{ bgcolor: '#f1f5f9', '&:hover': { bgcolor: '#e2e8f0' } }}
-              >
+              <IconButton href="/seller/products" sx={{ bgcolor: '#f1f5f9', '&:hover': { bgcolor: '#e2e8f0' } }}>
                 <ArrowBack />
               </IconButton>
               <Box>
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <Edit sx={{ color: '#3b82f6', fontSize: 22 }} />
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#334155' }}>
-                    Edit Product
-                  </Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#334155' }}>Edit Product</Typography>
                 </Stack>
                 <Typography variant="body2" color="text.secondary">
                   SKU: <strong>{sku}</strong> &nbsp;·&nbsp; Update the details below and click "Save Changes"
@@ -571,19 +592,13 @@ function ProductEditPage() {
               </Box>
             </Stack>
 
-            {/* Stepper */}
-            <Paper elevation={0} sx={{ borderRadius: 2, p: 2.5, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+            <Paper elevation={0} sx={{ borderRadius: 2, p: 2.5, border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
               <Stepper activeStep={activeStep} alternativeLabel>
                 {steps.map((label) => (
                   <Step key={label}>
-                    <StepLabel
-                      StepIconProps={{
-                        sx: {
-                          '&.Mui-active': { color: '#3b82f6' },
-                          '&.Mui-completed': { color: '#10b981' },
-                        },
-                      }}
-                    >
+                    <StepLabel StepIconProps={{
+                      sx: { '&.Mui-active': { color: '#3b82f6' }, '&.Mui-completed': { color: '#10b981' } },
+                    }}>
                       {label}
                     </StepLabel>
                   </Step>
@@ -593,108 +608,100 @@ function ProductEditPage() {
           </Box>
 
           <Grid container spacing={3}>
-            {/* Main Content */}
-            <Grid item xs={12} lg={8}>
-              <Paper
-                elevation={0}
-                sx={{ borderRadius: 2, border: '1px solid #e2e8f0', overflow: 'hidden', bgcolor: '#ffffff' }}
-              >
-                {/* ── Step 0: Product Details ── */}
+            <Grid item xs={12} md={8}>
+              <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e2e8f0', overflow: 'hidden', bgcolor: '#fff' }}>
+
+                {/* ════════════════════════════════════════════
+                    STEP 0 — Product Details
+                ════════════════════════════════════════════ */}
                 {activeStep === 0 && (
                   <Box sx={{ p: 3 }}>
                     <Stack spacing={3}>
+
                       {/* Validation summary */}
-                      {(errors.name || errors.images || errors.price || errors.category) && (
+                      {Object.values(errors).some(Boolean) && (
                         <Alert severity="error">
                           <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
-                            Please complete the following required fields:
+                            Please complete the required fields:
                           </Typography>
                           <Box component="ul" sx={{ pl: 2, mb: 0 }}>
                             {errors.name && <li>Product Name (minimum 3 words)</li>}
-                            {errors.category && <li>Product Category</li>}
-                            {errors.images && <li>Product Images (at least 1 image)</li>}
+                            {errors.category && <li>Product Category (select at least one)</li>}
+                            {errors.images && <li>Product Images (at least 1)</li>}
                             {errors.price && <li>Regular Price</li>}
                           </Box>
                         </Alert>
                       )}
 
-                      {/* Product Name */}
+                      {/* Name */}
                       <Box>
                         <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Inventory sx={{ color: '#3b82f6', fontSize: 20 }} />
-                          Product Name *
+                          <Inventory sx={{ color: '#3b82f6', fontSize: 20 }} />Product Name *
                         </Typography>
                         <TextField
-                          fullWidth
+                          fullWidth size="small"
                           placeholder="Enter a descriptive product name (minimum 3 words)"
-                          value={productData.name}
-                          onChange={handleInputChange('name')}
-                          size="small"
+                          value={form.name}
+                          onChange={handleInput('name')}
                           error={errors.name}
                           helperText={errors.name ? 'Product name must contain at least 3 words' : ''}
                         />
                       </Box>
 
-                      {/* Category Selection */}
+                      {/* ── Category Multi-Select (filtered to seller's segments) ── */}
                       <Box>
                         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
                           <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Category sx={{ color: '#3b82f6', fontSize: 20 }} />
-                            Product Category *
+                            <Category sx={{ color: '#3b82f6', fontSize: 20 }} />Product Categories *
                           </Typography>
-                          <Button size="small" startIcon={<Add />} onClick={() => setCategoryRequestOpen(true)} sx={{ textTransform: 'none', fontSize: '0.8rem', color: '#3b82f6', fontWeight: 600 }}>
-                            Add Category
+                          <Button
+                            size="small" startIcon={<Add />}
+                            onClick={() => setCategoryRequestOpen(true)}
+                            sx={{ textTransform: 'none', fontSize: '0.8rem', color: '#3b82f6', fontWeight: 600 }}
+                          >
+                            Request Category
                           </Button>
                         </Stack>
-                        <Stack spacing={2}>
-                          <FormControl fullWidth size="small" error={errors.category}>
-                            <InputLabel>Main Category</InputLabel>
-                            <Select
-                              value={selectedCategory}
-                              onChange={(e) => {
-                                setSelectedCategory(e.target.value)
-                                setSelectedSubCategory('')
-                                if (errors.category && e.target.value) setErrors((err) => ({ ...err, category: false }))
+
+                        {/* Skeleton while resolving seller id / fetching business categories */}
+                        {categoryLoading ? (
+                          <Stack spacing={1}>
+                            <Skeleton variant="rectangular" height={42} sx={{ borderRadius: 1 }} />
+                            <Stack direction="row" spacing={1}>
+                              <Skeleton variant="rounded" width={180} height={22} />
+                              <Skeleton variant="rounded" width={220} height={22} />
+                            </Stack>
+                          </Stack>
+                        ) : (
+                          <>
+                            <CategoryMultiSelect
+                              categories={mainCategories}
+                              selectedUids={selectedCategoryUids}
+                              onChange={(uids) => {
+                                setSelectedCategoryUids(uids)
+                                if (uids.length > 0) setErrors((e) => ({ ...e, category: false }))
                               }}
-                              label="Main Category"
-                            >
-                              {categories.map((cat) => (
-                                <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
-                              ))}
-                            </Select>
-                            {errors.category && (
-                              <Typography variant="caption" sx={{ color: '#ef4444', mt: 0.5, ml: 1.5 }}>
-                                Please select a category
+                              loading={false}
+                              error={errors.category}
+                              errorMessage="Please select at least one category"
+                              placeholder="Click to browse and select categories..."
+                            />
+
+                            <Typography variant="caption" color="text.secondary" sx={{ pl: 1, mt: 0.5, display: 'block' }}>
+                              Expand any category to select sub-categories and micro-categories.{' '}
+                              <Typography
+                                component="span" variant="caption"
+                                sx={{ color: '#3b82f6', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+                                onClick={() => setCategoryRequestOpen(true)}
+                              >
+                                Can't find yours? Request it.
                               </Typography>
-                            )}
-                          </FormControl>
-
-                          {selectedCategory && (
-                            <FormControl fullWidth size="small">
-                              <InputLabel>Sub Category</InputLabel>
-                              <Select value={selectedSubCategory} onChange={(e) => setSelectedSubCategory(e.target.value)} label="Sub Category">
-                                {categories.find((c) => c.id === selectedCategory)?.subCategories.map((sub) => (
-                                  <MenuItem key={sub.id} value={sub.id}>{sub.name}</MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          )}
-
-                          <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-                            Can't find your category?{' '}
-                            <Typography
-                              component="span"
-                              variant="caption"
-                              sx={{ color: '#3b82f6', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-                              onClick={() => setCategoryRequestOpen(true)}
-                            >
-                              Request to add new category
                             </Typography>
-                          </Typography>
-                        </Stack>
+                          </>
+                        )}
                       </Box>
 
-                      {/* Image Upload */}
+                      {/* Images */}
                       <ImageUploadManager
                         images={images}
                         setImages={setImages}
@@ -702,141 +709,94 @@ function ProductEditPage() {
                         setErrors={setErrors}
                         setSnackbar={setSnackbar}
                       />
-
-                      {/* Existing-image info banner */}
-                      {images.some((img) => img.isExisting) && (
+                      {images.some((i) => i.isExisting) && (
                         <Alert severity="info" icon={<Info />}>
-                          Images already saved on this product are shown above. Upload new images to add more; removing an existing image requires saving the changes.
+                          Existing images are shown above. Upload new ones to add more.
                         </Alert>
                       )}
 
-                      {/* ── Pricing ── */}
+                      {/* Pricing */}
                       <Box>
                         <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <TrendingUp sx={{ color: '#3b82f6', fontSize: 20 }} />
-                          Pricing Information *
+                          <TrendingUp sx={{ color: '#3b82f6', fontSize: 20 }} />Pricing Information *
                         </Typography>
                         <Stack spacing={2.5}>
 
-                          {/* Regular price row: price + unit (fetched from attribute) */}
+                          {/* Price + Unit */}
                           <Box>
                             <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>Regular Price</Typography>
                             <Grid container spacing={2} alignItems="flex-start">
-                              {/* Price */}
                               <Grid item xs={12} sm={5}>
                                 <TextField
-                                  fullWidth
-                                  label="Price"
-                                  placeholder="0.00"
-                                  value={productData.price}
-                                  onChange={handleInputChange('price')}
-                                  type="number"
-                                  size="small"
+                                  fullWidth label="Price" placeholder="0.00" type="number" size="small"
+                                  value={form.price} onChange={handleInput('price')}
                                   error={errors.price}
                                   helperText={errors.price ? 'Price must be greater than 0' : ''}
-                                  InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+                                  InputProps={{ startAdornment: <InputAdornment position="start">Rs.</InputAdornment> }}
                                 />
                               </Grid>
-
-                              {/* Unit — Autocomplete with freeSolo so user can type a custom value */}
                               <Grid item xs={12} sm={7}>
                                 <Autocomplete
-                                  freeSolo
-                                  size="small"
-                                  options={predefinedUnitOptions}
-                                  // getOptionLabel returns the visible text for each option object
-                                  getOptionLabel={(opt) =>
-                                    typeof opt === 'string' ? opt : opt.label
+                                  freeSolo size="small" options={predefinedUnitOptions}
+                                  getOptionLabel={(opt) => typeof opt === 'string' ? opt : opt.label}
+                                  inputValue={form.unitText}
+                                  onChange={(_e, v) =>
+                                    setForm((p) => ({
+                                      ...p,
+                                      unitText: v == null ? '' : typeof v === 'string' ? v : v.label,
+                                    }))
                                   }
-                                  // The input value is always productData.unitText
-                                  inputValue={productData.unitText}
-                                  // When user picks from dropdown — store the label text
-                                  onChange={(_e, newValue) => {
-                                    const label =
-                                      newValue == null
-                                        ? ''
-                                        : typeof newValue === 'string'
-                                          ? newValue
-                                          : newValue.label
-                                    setProductData((prev) => ({ ...prev, unitText: label }))
-                                  }}
-                                  // When user types freely — update unitText directly
-                                  onInputChange={(_e, newInputValue, reason) => {
-                                    // 'reset' fires when the dropdown selection is already
-                                    // handled by onChange above — skip to avoid double-set
-                                    if (reason !== 'reset') {
-                                      setProductData((prev) => ({ ...prev, unitText: newInputValue }))
-                                    }
+                                  onInputChange={(_e, v, reason) => {
+                                    if (reason !== 'reset') setForm((p) => ({ ...p, unitText: v }))
                                   }}
                                   loading={unitOptionsLoading}
                                   renderInput={(params) => (
                                     <TextField
                                       {...params}
                                       label="Unit of Measurement"
-                                      placeholder="e.g. Piece, Kg, Litre…"
-                                      helperText="Select from the list or type a custom unit"
+                                      placeholder="e.g. Piece, Kg, Litre..."
+                                      helperText="Select from list or type a custom unit"
                                       InputProps={{
                                         ...params.InputProps,
                                         endAdornment: (
                                           <>
-                                            {unitOptionsLoading && (
-                                              <CircularProgress color="inherit" size={14} />
-                                            )}
+                                            {unitOptionsLoading && <CircularProgress color="inherit" size={14} />}
                                             {params.InputProps.endAdornment}
                                           </>
                                         ),
                                       }}
                                     />
                                   )}
-                                  // Render each option showing only its label
-                                  renderOption={(props, option) => (
-                                    <li {...props} key={option.value}>
-                                      {option.label}
-                                    </li>
+                                  renderOption={(props, opt) => (
+                                    <li {...props} key={opt.value}>{opt.label}</li>
                                   )}
-                                  // Allow the user to add a custom value not in the list
-                                  filterOptions={(options, params) => {
-                                    const filtered = options.filter((o) =>
+                                  filterOptions={(opts, params) => {
+                                    const filtered = opts.filter((o) =>
                                       o.label.toLowerCase().includes(params.inputValue.toLowerCase())
                                     )
-                                    const inputValue = params.inputValue.trim()
-                                    const alreadyExists = options.some(
-                                      (o) => o.label.toLowerCase() === inputValue.toLowerCase()
-                                    )
-                                    if (inputValue && !alreadyExists) {
-                                      // Inject a synthetic "Add <value>" option
-                                      filtered.push({ label: `Add "${inputValue}"`, value: `__custom__${inputValue}` })
-                                    }
+                                    const iv = params.inputValue.trim()
+                                    if (iv && !opts.some((o) => o.label.toLowerCase() === iv.toLowerCase()))
+                                      filtered.push({ label: `Add "${iv}"`, value: `__custom__${iv}` })
                                     return filtered
                                   }}
-                                  // When user selects the synthetic "Add" option, strip the prefix
-                                  isOptionEqualToValue={(option, val) =>
-                                    option.value === val.value
-                                  }
+                                  isOptionEqualToValue={(o, v) => o.value === v.value}
                                 />
                               </Grid>
                             </Grid>
                           </Box>
 
-                          {/* Minimum Order Quantity (mqa attribute) */}
+                          {/* Min Order Qty */}
                           <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                              Minimum Order Quantity
-                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>Minimum Order Quantity</Typography>
                             <Grid container spacing={2}>
                               <Grid item xs={12} sm={5}>
                                 <TextField
-                                  fullWidth
-                                  label="Min. Order Qty"
-                                  placeholder="e.g. 50"
-                                  value={productData.minOrderQty}
-                                  onChange={handleInputChange('minOrderQty')}
-                                  type="number"
-                                  size="small"
+                                  fullWidth label="Min. Order Qty" placeholder="e.g. 50" type="number" size="small"
+                                  value={form.minOrderQty} onChange={handleInput('minOrderQty')}
                                   InputProps={{
-                                    endAdornment: productData.unitText ? (
-                                      <InputAdornment position="end">{productData.unitText}</InputAdornment>
-                                    ) : undefined,
+                                    endAdornment: form.unitText
+                                      ? <InputAdornment position="end">{form.unitText}</InputAdornment>
+                                      : undefined,
                                   }}
                                   helperText="Minimum quantity a buyer must order"
                                 />
@@ -850,22 +810,36 @@ function ProductEditPage() {
                             <Grid container spacing={2}>
                               <Grid item xs={12}>
                                 <TextField
-                                  fullWidth
-                                  label="Special Price"
-                                  placeholder="0.00"
-                                  value={productData.specialPrice}
-                                  onChange={handleInputChange('specialPrice')}
-                                  type="number"
-                                  size="small"
-                                  InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
-                                  helperText="Offer a discounted price for a limited time"
+                                  fullWidth label="Special Price" placeholder="0.00" type="number" size="small"
+                                  value={form.specialPrice} onChange={handleInput('specialPrice')}
+                                  InputProps={{ startAdornment: <InputAdornment position="start">Rs.</InputAdornment> }}
+                                  helperText="Discounted price for a limited time"
+                                />
+                              </Grid>
+                              {/* Date pickers — same pattern as addproduct */}
+                              <Grid item xs={12} sm={6}>
+                                <TextField
+                                  fullWidth label="Special Price From" size="small"
+                                  type="date"
+                                  value={form.specialPriceFrom}
+                                  onChange={handleInput('specialPriceFrom')}
+                                  inputProps={{ min: new Date().toISOString().split('T')[0] }}
+                                  InputLabelProps={{ shrink: true }}
+                                  helperText="Start date for special price"
                                 />
                               </Grid>
                               <Grid item xs={12} sm={6}>
-                                <TextField fullWidth label="Special Price From" placeholder="DD/MM/YYYY" value={productData.specialPriceFrom} onChange={handleInputChange('specialPriceFrom')} size="small" helperText="Start date" />
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                <TextField fullWidth label="Special Price To" placeholder="DD/MM/YYYY" value={productData.specialPriceTo} onChange={handleInputChange('specialPriceTo')} size="small" helperText="End date" />
+                                <TextField
+                                  fullWidth label="Special Price To" size="small"
+                                  type="date"
+                                  value={form.specialPriceTo}
+                                  onChange={handleInput('specialPriceTo')}
+                                  inputProps={{
+                                    min: form.specialPriceFrom || new Date().toISOString().split('T')[0],
+                                  }}
+                                  InputLabelProps={{ shrink: true }}
+                                  helperText="End date for special price"
+                                />
                               </Grid>
                             </Grid>
                           </Box>
@@ -875,119 +849,215 @@ function ProductEditPage() {
                       {/* Description */}
                       <Box>
                         <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Description sx={{ color: '#3b82f6', fontSize: 20 }} />
-                          Product Description
+                          <Description sx={{ color: '#3b82f6', fontSize: 20 }} />Product Description
                         </Typography>
                         <TextField
-                          fullWidth
-                          placeholder="Provide a detailed description…"
-                          value={productData.description}
-                          onChange={handleInputChange('description')}
-                          multiline
-                          rows={5}
-                          size="small"
+                          fullWidth multiline rows={5} size="small"
+                          placeholder="Provide a detailed description..."
+                          value={form.description} onChange={handleInput('description')}
                         />
                         <Stack direction="row" justifyContent="space-between" sx={{ mt: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">Minimum 100 characters recommended</Typography>
-                          <Typography variant="caption" sx={{ color: productData.description.length > 100 ? '#10b981' : '#64748b', fontWeight: 500 }}>
-                            {productData.description.length} / 4000
+                          <Typography variant="caption" color="text.secondary">
+                            Minimum 100 characters recommended
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: form.description.length > 100 ? '#10b981' : '#64748b', fontWeight: 500 }}>
+                            {form.description.length} / 4000
                           </Typography>
                         </Stack>
                       </Box>
+
                     </Stack>
                   </Box>
                 )}
 
-                {/* ── Step 1: Specifications ── (min order qty removed — now in Pricing) */}
+                {/* ════════════════════════════════════════════
+                    STEP 1 — Specifications
+                ════════════════════════════════════════════ */}
                 {activeStep === 1 && (
                   <Box sx={{ p: 3 }}>
                     <Stack spacing={3}>
-                      <Alert severity="info" icon={<Info />} sx={{ fontSize: '0.875rem' }}>
+                      <Alert severity="info" icon={<Info />}>
                         Additional details help buyers make informed decisions and improve your product ranking
                       </Alert>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                          <TextField
-                            fullWidth
-                            label="Production Capacity"
-                            placeholder="e.g., 5000 units/month"
-                            value={productData.productionCapacity}
-                            onChange={handleInputChange('productionCapacity')}
-                            size="small"
-                          />
-                        </Grid>
-                      </Grid>
+
+                      {/* SKU (disabled) */}
                       <TextField
-                        fullWidth
-                        label="Product Code / SKU"
-                        placeholder="Your internal reference code"
-                        value={productData.productCode}
-                        onChange={handleInputChange('productCode')}
-                        size="small"
-                        disabled
+                        fullWidth label="Product Code / SKU" size="small"
+                        value={form.productCode} disabled
                         helperText="SKU cannot be changed after product creation"
                       />
-                      <Box>
-                        <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <LocalShipping sx={{ color: '#3b82f6', fontSize: 20 }} />
-                          Shipping & Delivery
-                        </Typography>
-                        <Stack spacing={2}>
-                          <TextField fullWidth label="Estimated Delivery Time" placeholder="e.g., 5-7 business days" value={productData.deliveryTime} onChange={handleInputChange('deliveryTime')} size="small" />
-                          <TextField fullWidth label="Packaging Details" placeholder="Describe packaging materials, dimensions…" value={productData.packagingDetails} onChange={handleInputChange('packagingDetails')} multiline rows={3} size="small" />
-                        </Stack>
-                      </Box>
+
+                      {/* ── Dynamic Category Attributes ── */}
+                      {selectedCategoryIds.length > 0 && (
+                        <Box>
+                          {categoryAttributesLoading ? (
+                            <Stack spacing={1.5}>
+                              {[1, 2, 3].map((i) => (
+                                <Skeleton key={i} variant="rectangular" height={40} sx={{ borderRadius: 1 }} />
+                              ))}
+                            </Stack>
+                          ) : categoryAttributes.length > 0 ? (
+                            <Stack spacing={3}>
+                              {Object.entries(attributesByGroup).map(([groupName, attrs]) => (
+                                <Box key={groupName}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '2px solid #e2e8f0' }}>
+                                    <Box sx={{ width: 4, height: 18, bgcolor: '#3b82f6', borderRadius: 1, flexShrink: 0 }} />
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem' }}>
+                                      {groupName}
+                                    </Typography>
+                                    <Chip
+                                      label={`${attrs.length} field${attrs.length > 1 ? 's' : ''}`}
+                                      size="small"
+                                      sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#eff6ff', color: '#3b82f6', fontWeight: 600, ml: 'auto' }}
+                                    />
+                                  </Box>
+                                  <Grid container spacing={2}>
+                                    {attrs.map((attr) => (
+                                      <Grid item xs={12} sm={6} key={attr.attribute_code}>
+                                        {attr.input_type === 'select' ? (
+                                          <Autocomplete
+                                            size="small"
+                                            options={attr.options}
+                                            getOptionLabel={(opt) => typeof opt === 'string' ? opt : opt.label}
+                                            value={attr.options.find((o) => o.value === attributeValues[attr.attribute_code]) ?? null}
+                                            onChange={(_e, newVal) => {
+                                              setAttributeValues((prev) => ({
+                                                ...prev,
+                                                [attr.attribute_code]: newVal ? (newVal as AttributeOption).value : '',
+                                              }))
+                                            }}
+                                            renderInput={(params) => (
+                                              <TextField
+                                                {...params}
+                                                label={attr.label}
+                                                placeholder={`Select ${attr.label.toLowerCase()}...`}
+                                              />
+                                            )}
+                                            renderOption={(props, option) => (
+                                              <li {...props} key={option.value}>{option.label}</li>
+                                            )}
+                                            isOptionEqualToValue={(o, v) => o.value === v.value}
+                                          />
+                                        ) : (
+                                          <TextField
+                                            fullWidth size="small"
+                                            label={attr.label}
+                                            placeholder={`Enter ${attr.label.toLowerCase()}...`}
+                                            value={attributeValues[attr.attribute_code] ?? ''}
+                                            onChange={(e) => {
+                                              setAttributeValues((prev) => ({
+                                                ...prev,
+                                                [attr.attribute_code]: e.target.value,
+                                              }))
+                                            }}
+                                            type={
+                                              attr.backend_type === 'decimal' || attr.backend_type === 'int'
+                                                ? 'number'
+                                                : 'text'
+                                            }
+                                          />
+                                        )}
+                                      </Grid>
+                                    ))}
+                                  </Grid>
+                                </Box>
+                              ))}
+                            </Stack>
+                          ) : (
+                            <Alert severity="info" icon={<Info />} sx={{ fontSize: '0.85rem' }}>
+                              No additional specifications required for the selected categories.
+                            </Alert>
+                          )}
+                        </Box>
+                      )}
+
+                      {selectedCategoryIds.length === 0 && (
+                        <Alert severity="warning" sx={{ fontSize: '0.85rem' }}>
+                          Select categories in Step 1 to load product specifications.
+                        </Alert>
+                      )}
                     </Stack>
                   </Box>
                 )}
 
-                {/* ── Step 2: Review ── */}
+                {/* ════════════════════════════════════════════
+                    STEP 2 — Review
+                ════════════════════════════════════════════ */}
                 {activeStep === 2 && (
                   <Box sx={{ p: 3 }}>
                     <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>Review Your Changes</Typography>
                     <Stack spacing={2}>
+
                       <Card variant="outlined" sx={{ borderRadius: 2 }}>
                         <CardContent sx={{ py: 1.5 }}>
                           <Typography variant="caption" color="text.secondary">Product Name</Typography>
-                          <Typography variant="body2" fontWeight={600}>{productData.name || 'Not provided'}</Typography>
+                          <Typography variant="body2" fontWeight={600}>{form.name || 'Not provided'}</Typography>
                         </CardContent>
                       </Card>
+
                       <Card variant="outlined" sx={{ borderRadius: 2 }}>
                         <CardContent sx={{ py: 1.5 }}>
                           <Typography variant="caption" color="text.secondary">SKU</Typography>
                           <Typography variant="body2" fontWeight={600}>{sku}</Typography>
                         </CardContent>
                       </Card>
+
+                      {/* Categories */}
                       <Card variant="outlined" sx={{ borderRadius: 2 }}>
                         <CardContent sx={{ py: 1.5 }}>
-                          <Typography variant="caption" color="text.secondary">Category</Typography>
-                          <Typography variant="body2" fontWeight={600}>
-                            {selectedCategory
-                              ? `${categories.find((c) => c.id === selectedCategory)?.name}${selectedSubCategory
-                                ? ` > ${categories.find((c) => c.id === selectedCategory)?.subCategories.find((s) => s.id === selectedSubCategory)?.name}`
-                                : ''}`
-                              : 'Not selected'}
+                          <Typography variant="caption" color="text.secondary">
+                            Categories ({selectedCategoryUids.length})
                           </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                            {selectedCategoryUids.length === 0
+                              ? <Typography variant="body2" color="text.secondary">None selected</Typography>
+                              : selectedCategoryUids.map((uid) => (
+                                <Chip
+                                  key={uid} size="small"
+                                  label={findCategoryName(allMainCategories, uid)}
+                                  sx={{ bgcolor: '#eff6ff', color: '#1d4ed8', fontSize: '11px', fontWeight: 600, border: '1px solid #bfdbfe' }}
+                                />
+                              ))}
+                          </Box>
+                          {attributeSetName && (
+                            <Typography variant="caption" sx={{ color: '#64748b', mt: 0.5, display: 'block' }}>
+                              Attribute Set: <strong>{attributeSetName}</strong>
+                            </Typography>
+                          )}
                         </CardContent>
                       </Card>
+
+                      {/* Pricing */}
                       <Card variant="outlined" sx={{ borderRadius: 2 }}>
                         <CardContent sx={{ py: 1.5 }}>
                           <Typography variant="caption" color="text.secondary">Pricing</Typography>
                           <Stack spacing={1}>
                             <Typography variant="body2" fontWeight={600}>
-                              ₹{productData.price || '0'}{productData.unitText ? ` / ${productData.unitText}` : ''}
+                              Rs.{form.price || '0'}{form.unitText ? ` / ${form.unitText}` : ''}
                             </Typography>
-                            {productData.minOrderQty && (
+                            {form.minOrderQty && (
                               <Typography variant="body2" color="text.secondary">
-                                Min. Order: {productData.minOrderQty}{productData.unitText ? ` ${productData.unitText}` : ''}
+                                Min. Order: {form.minOrderQty}{form.unitText ? ` ${form.unitText}` : ''}
                               </Typography>
                             )}
-                            {productData.specialPrice && (
-                              <Chip label={`Special Price: ₹${productData.specialPrice}`} size="small" sx={{ bgcolor: '#dcfce7', color: '#10b981', fontWeight: 600, width: 'fit-content' }} />
+                            {form.specialPrice && (
+                              <Box>
+                                <Chip
+                                  label={`Special Price: Rs.${form.specialPrice}`} size="small"
+                                  sx={{ bgcolor: '#dcfce7', color: '#10b981', fontWeight: 600, width: 'fit-content' }}
+                                />
+                                {form.specialPriceFrom && form.specialPriceTo && (
+                                  <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                                    Valid from {form.specialPriceFrom} to {form.specialPriceTo}
+                                  </Typography>
+                                )}
+                              </Box>
                             )}
                           </Stack>
                         </CardContent>
                       </Card>
+
+                      {/* Images */}
                       <Card variant="outlined" sx={{ borderRadius: 2 }}>
                         <CardContent sx={{ py: 1.5 }}>
                           <Typography variant="caption" color="text.secondary">Images</Typography>
@@ -997,34 +1067,65 @@ function ProductEditPage() {
                           </Typography>
                         </CardContent>
                       </Card>
-                      {productData.description && (
+
+                      {/* Category Attributes summary */}
+                      {categoryAttributes.length > 0 &&
+                        Object.keys(attributeValues).some((k) => attributeValues[k]) && (
+                          <Card variant="outlined" sx={{ borderRadius: 2 }}>
+                            <CardContent sx={{ py: 1.5 }}>
+                              <Typography variant="caption" color="text.secondary">Product Specifications</Typography>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                {categoryAttributes
+                                  .filter((a) => attributeValues[a.attribute_code])
+                                  .map((attr) => {
+                                    const val = attributeValues[attr.attribute_code]
+                                    const label = attr.input_type === 'select'
+                                      ? (attr.options.find((o) => o.value === val)?.label ?? val)
+                                      : val
+                                    return (
+                                      <Chip
+                                        key={attr.attribute_code} size="small"
+                                        label={`${attr.label}: ${label}`}
+                                        sx={{ bgcolor: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '11px', color: '#475569' }}
+                                      />
+                                    )
+                                  })}
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                      {/* Description */}
+                      {form.description && (
                         <Card variant="outlined" sx={{ borderRadius: 2 }}>
                           <CardContent sx={{ py: 1.5 }}>
                             <Typography variant="caption" color="text.secondary">Description</Typography>
-                            <Typography variant="body2" sx={{ maxHeight: 100, overflow: 'auto' }}>{productData.description}</Typography>
+                            <Typography variant="body2" sx={{ maxHeight: 100, overflow: 'auto' }}>
+                              {form.description}
+                            </Typography>
                           </CardContent>
                         </Card>
                       )}
-                      <Alert severity="success">Review your changes above and click "Save Changes" to update the product.</Alert>
+
+                      <Alert severity="success">
+                        Review your changes above and click "Save Changes" to update the product.
+                      </Alert>
                     </Stack>
                   </Box>
                 )}
 
-                {/* Navigation footer */}
+                {/* ── Nav footer ── */}
                 <Divider />
                 <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', bgcolor: '#fafbfc' }}>
                   <Button
-                    variant="outlined"
-                    onClick={handleBack}
+                    variant="outlined" size="small" onClick={handleBack}
                     disabled={activeStep === 0 || isProcessing}
-                    size="small"
                     sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569' }}
                   >
                     Back
                   </Button>
                   <Button
-                    variant="contained"
-                    size="small"
+                    variant="contained" size="small"
                     onClick={activeStep === steps.length - 1 ? handleUpdate : handleNext}
                     disabled={isProcessing}
                     sx={{ textTransform: 'none', bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, minWidth: 140 }}
@@ -1033,7 +1134,7 @@ function ProductEditPage() {
                       <Stack direction="row" spacing={1} alignItems="center">
                         <CircularProgress size={16} sx={{ color: 'white' }} />
                         <Typography variant="caption" sx={{ color: 'white' }}>
-                          {isUpdating ? 'Saving…' : 'Uploading…'}
+                          {isUpdating ? 'Saving...' : 'Uploading...'}
                         </Typography>
                       </Stack>
                     ) : activeStep === steps.length - 1 ? 'Save Changes' : 'Continue'}
@@ -1042,18 +1143,23 @@ function ProductEditPage() {
               </Paper>
             </Grid>
 
-            {/* Sidebar quality score */}
-            <Grid item xs={12} lg={4}>
+            {/* Sidebar */}
+            <Grid item xs={12} md={4}>
               <ProductQualityScore
-                productData={{ ...productData, unit: productData.unitText }}
-                selectedCategory={selectedCategory}
+                productData={{ ...form, unit: form.unitText }}
+                selectedCategory={selectedCategoryUids[0] ?? ''}
                 images={images}
               />
             </Grid>
           </Grid>
 
-          {/* Category Request Dialog */}
-          <Dialog open={categoryRequestOpen} onClose={() => setCategoryRequestOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+          {/* ── Category Request Dialog ── */}
+          <Dialog
+            open={categoryRequestOpen}
+            onClose={() => setCategoryRequestOpen(false)}
+            maxWidth="sm" fullWidth
+            PaperProps={{ sx: { borderRadius: 3 } }}
+          >
             <DialogTitle sx={{ pb: 1 }}>
               <Typography variant="h6" fontWeight={700}>Request New Category</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -1062,39 +1168,46 @@ function ProductEditPage() {
             </DialogTitle>
             <DialogContent sx={{ pt: 2 }}>
               <TextField
-                fullWidth
-                label="Category Name"
-                placeholder="e.g., Organic Food Products, Solar Equipment…"
+                fullWidth label="Category Name"
+                placeholder="e.g., Organic Food Products, Solar Equipment..."
                 value={requestedCategory}
                 onChange={(e) => setRequestedCategory(e.target.value)}
-                multiline
-                rows={3}
-                sx={{ mb: 2 }}
+                multiline rows={3} sx={{ mb: 2 }}
                 helperText="Please provide as much detail as possible"
               />
-              <Alert severity="info">Requests are reviewed within 24–48 hours.</Alert>
+              <Alert severity="info">Requests are reviewed within 24-48 hours.</Alert>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 3 }}>
-              <Button variant="outlined" onClick={() => { setCategoryRequestOpen(false); setRequestedCategory('') }} sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569' }}>
+              <Button
+                variant="outlined"
+                onClick={() => { setCategoryRequestOpen(false); setRequestedCategory('') }}
+                sx={{ textTransform: 'none', borderColor: '#cbd5e1', color: '#475569' }}
+              >
                 Cancel
               </Button>
-              <Button variant="contained" onClick={() => { setSnackbar({ open: true, message: `Category request submitted: ${requestedCategory}`, severity: 'success' }); setCategoryRequestOpen(false); setRequestedCategory('') }} disabled={!requestedCategory.trim()} sx={{ textTransform: 'none', bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>
+              <Button
+                variant="contained" disabled={!requestedCategory.trim()}
+                onClick={() => {
+                  setSnackbar({ open: true, message: `Category request submitted: ${requestedCategory}`, severity: 'success' })
+                  setCategoryRequestOpen(false)
+                  setRequestedCategory('')
+                }}
+                sx={{ textTransform: 'none', bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}
+              >
                 Submit Request
               </Button>
             </DialogActions>
           </Dialog>
 
-          {/* Snackbar */}
+          {/* ── Snackbar ── */}
           <Snackbar
-            open={snackbar.open}
-            autoHideDuration={6000}
+            open={snackbar.open} autoHideDuration={6000}
             onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
             anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
           >
             <Alert
               onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-              severity={snackbar.severity}
-              sx={{ width: '100%' }}
+              severity={snackbar.severity} sx={{ width: '100%' }}
               icon={snackbar.severity === 'success' ? <CheckCircle /> : undefined}
             >
               {snackbar.message}
@@ -1107,9 +1220,9 @@ function ProductEditPage() {
   )
 }
 
-const pageOptions: PageOptions<LayoutNavigationProps> = {
-  Layout: LayoutNavigation,
-}
+// ─── Page options ─────────────────────────────────────────────────────────────
+
+const pageOptions: PageOptions<LayoutNavigationProps> = { Layout: LayoutNavigation }
 ProductEditPage.pageOptions = pageOptions
 export default ProductEditPage
 
@@ -1119,10 +1232,7 @@ export const getStaticProps: GetPageStaticProps = async (context) => {
   const conf = client.query({ query: StoreConfigDocument })
   const layout = staticClient.query({ query: LayoutDocument, fetchPolicy: cacheFirst(staticClient) })
   return {
-    props: {
-      ...(await layout).data,
-      apolloState: await conf.then(() => client.cache.extract()),
-    },
+    props: { ...(await layout).data, apolloState: await conf.then(() => client.cache.extract()) },
     revalidate: 60 * 20,
   }
 }

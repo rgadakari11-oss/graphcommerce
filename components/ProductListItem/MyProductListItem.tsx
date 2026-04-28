@@ -109,6 +109,8 @@ function ProductListItemReal(props: ProductProps) {
 
   const sellerId = seller_id ? Number(seller_id) : undefined
   const { seller } = useProductSeller(sellerId)
+  console.log(seller)
+
   const AddToCartClient = dynamic(
     () =>
       import('../addtocart/CustomAddProductsToCartButton')
@@ -410,7 +412,7 @@ function ProductListItemReal(props: ProductProps) {
                 )}
 
                 {/* Top Seller - Desktop only */}
-                {seller?.trust_seal && !isMobile && (
+                {seller?.buyer_protected_badge && !isMobile && (
                   <Tooltip title="Top rated seller" arrow>
                     <Box
                       sx={{
@@ -420,19 +422,19 @@ function ProductListItemReal(props: ProductProps) {
                         px: '6px',
                         py: '2px',
                         borderRadius: '6px',
-                        backgroundColor: '#FFF8E1',
+                        backgroundColor: '#F1F8F4',
                       }}
                     >
-                      <CheckCircleIcon sx={{ fontSize: 14, color: '#F9A825' }} />
+                      <CheckCircleIcon sx={{ fontSize: 14, color: '#1B5E20' }} />
                       <Typography
                         sx={{
                           fontSize: '11px !important',
                           fontWeight: 600,
-                          color: '#F57F17',
+                          color: '#1B5E20',
                           lineHeight: 1,
                         }}
                       >
-                        Top Seller
+                        Protected
                       </Typography>
                     </Box>
                   </Tooltip>
@@ -453,10 +455,14 @@ function ProductListItemReal(props: ProductProps) {
             }}
           >
             {/* GST */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-              <CheckCircleIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: '#007a6e' }} />
-              <Typography sx={{ fontSize: { xs: '11px !important', sm: '12px !important' } }}>GST</Typography>
-            </Box>
+
+            {seller?.gst_number && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                <CheckCircleIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: '#007a6e' }} />
+                <Typography sx={{ fontSize: { xs: '11px !important', sm: '12px !important' } }}>GST</Typography>
+              </Box>
+            )}
+
 
             {/* Email */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
@@ -487,7 +493,7 @@ function ProductListItemReal(props: ProductProps) {
             )}
 
             {/* Fast Response - Desktop only */}
-            {seller?.trust_seal && !isMobile && (
+            {seller?.secure_badge && !isMobile && (
               <Tooltip title="Responds quickly" arrow>
                 <Box
                   sx={{
@@ -509,7 +515,35 @@ function ProductListItemReal(props: ProductProps) {
                       lineHeight: 1,
                     }}
                   >
-                    Fast Response
+                    Secure
+                  </Typography>
+                </Box>
+              </Tooltip>
+            )}
+
+            {!seller?.secure_badge && seller?.on_time_delivery_badge && !isMobile && (
+              <Tooltip title="Responds quickly" arrow>
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    px: '6px',
+                    py: '2px',
+                    borderRadius: '6px',
+                    backgroundColor: '#E3F2FD',
+                  }}
+                >
+                  <CheckCircleIcon sx={{ fontSize: 14, color: '#1565C0' }} />
+                  <Typography
+                    sx={{
+                      fontSize: '11px !important',
+                      fontWeight: 600,
+                      color: '#0D47A1',
+                      lineHeight: 1,
+                    }}
+                  >
+                    On-Time Delivery
                   </Typography>
                 </Box>
               </Tooltip>
